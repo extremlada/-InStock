@@ -5,14 +5,14 @@ from .models import items, raktar, reszleg
 class RészlegSerializer(serializers.ModelSerializer):
     class Meta:
         model = reszleg
-        fields = ['id', 'név']
+        fields = ['id', 'name']
 
 class RaktárSerializer(serializers.ModelSerializer):
     raktarok = RészlegSerializer(many=True, required=False, read_only=True)
 
     class Meta:
         model = raktar
-        fields = ['id', 'név', 'raktarok']
+        fields = ['id', 'name', 'raktarok']
 
     def create(self, validated_data):
         raktar_data = validated_data.pop('raktarok', [])
@@ -29,7 +29,7 @@ class ItemsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = items
-        fields = ['id', 'név', 'barcode', 'description', 'mennyiség', 'Tárgyak']
+        fields = ['id', 'name', 'barcode', 'description', 'mennyiség', 'Tárgyak']
 
     def create(self, validated_data):
         Tárgy_data = validated_data.pop('Tárgyak', [])
