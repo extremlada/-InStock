@@ -5,19 +5,19 @@ from .models import raktar, reszleg, items
 from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer
 
 
-@api_view(['DELETE'])
+@api_view(['GET','POST','DELETE'])
 def Részleg_list(request):
-    #if request.method == 'GET':
-    #    részleg = reszleg.objects.all()
-    #    serializer = RészlegSerializer(részleg, many=True)
-    #    return Response(serializer.data, status=status.HTTP_200_OK)
-#
-    #if request.method == 'POST':
-    #    serializer = RészlegSerializer(data=request.data)
-    #    if serializer.is_valid():
-    #        serializer.save()
-    #        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'GET':
+        részleg = reszleg.objects.all()
+        serializer = RészlegSerializer(részleg, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if request.method == 'POST':
+        serializer = RészlegSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     if request.method == 'DELETE':
         részleg = reszleg.objects.all()
