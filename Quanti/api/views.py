@@ -24,6 +24,25 @@ def Részleg_list(request):
         részleg.delete()
         return Response({"message": "Company deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
+@api_view(['GET','POST','DELETE'])
+def Raktár_list(request):
+    if request.method == 'GET':
+        raktár = raktar.objects.all()
+        serializer = RaktárSerializer(raktar, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if request.method == 'POST':
+        serializer = RaktárSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    if request.method == 'DELETE':
+        raktár.delete()
+        return Response({"message": "Company deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
 
 @api_view(['GET', 'PATCH', 'DELETE'])
 def Részleg_details(request, id):
@@ -53,11 +72,6 @@ def Részleg_details(request, id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     if request.method == 'DELETE':
-        if reszleg.employees.exists():
-            return Response(
-                {"error": "Cannot delete a company that has employees"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         reszleg.delete()
         return Response({"message": "Company deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
