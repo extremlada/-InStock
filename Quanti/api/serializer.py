@@ -13,15 +13,6 @@ class RaktárSerializer(serializers.ModelSerializer):
     class Meta:
         model = raktar
         fields = ['id', 'name', 'raktarok']
-
-    def create(self, validated_data):
-        raktar_data = validated_data.pop('raktarok', [])
-        részleg = reszleg.objects.create(**validated_data)
-        for raktarok_data in raktar_data:
-            raktarok_serializer = RészlegSerializer(data=raktarok_data)
-            raktarok_serializer.is_valid(raise_exception=True)
-            raktarok_serializer.save(részleg=részleg)
-        return részleg
     
 
 class ItemsSerializer(serializers.ModelSerializer):
@@ -30,12 +21,3 @@ class ItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = items
         fields = ['id', 'name', 'barcode', 'description', 'mennyiség', 'Tárgyak']
-
-    def create(self, validated_data):
-        Tárgy_data = validated_data.pop('Tárgyak', [])
-        Tárgy = reszleg.objects.create(**validated_data)
-        for Tárgyak_data in Tárgy_data:
-            tárgyak_serializer = RaktárSerializer(data=Tárgyak_data)
-            tárgyak_serializer.is_valid(raise_exception=True)
-            tárgyak_serializer.save(Tárgy=Tárgy)
-        return Tárgy
