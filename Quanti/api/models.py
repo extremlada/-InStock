@@ -26,4 +26,4 @@ class items(models.Model):
     Depot = models.ForeignKey(raktar, blank=False, related_name="Tárgyak", on_delete=models.CASCADE)
     
     def __str__(self):
-        self.name
+        return self.name

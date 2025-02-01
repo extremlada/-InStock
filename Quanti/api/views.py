@@ -26,9 +26,9 @@ def Részleg_list(request):
 
 @api_view(['GET','POST','DELETE'])
 def Raktár_list(request):
+    raktár = raktar.objects.all()
     if request.method == 'GET':
-        raktár = raktar.objects.all()
-        serializer = RaktárSerializer(raktar, many=True)
+        serializer = RaktárSerializer(raktár, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     if request.method == 'POST':
