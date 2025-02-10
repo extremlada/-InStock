@@ -14,11 +14,4 @@ export default class App extends Component {
     }
 }
 
-const appDiv = document.getElementById("app");
-console.log('appDiv:', appDiv); // Debugging line
-if (appDiv) {
-  const root = createRoot(appDiv);
-  root.render(<App />);
-} else {
-  console.error('No element with id "app" found.');
-}
+

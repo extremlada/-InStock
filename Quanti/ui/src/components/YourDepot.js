@@ -6,6 +6,6 @@ export default class YourDepotPage extends Component {
   }
 
   render() {
-    return <p>This is the Depot</p>;
+    return <p>This is the Részleg</p>;
   }
 }
