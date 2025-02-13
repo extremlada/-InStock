@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import Radio from "@material-ui/core/Radio";
 import RadioGroup from "@material-ui/core/RadioGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
+import { formHelperTextClasses } from "@mui/material";
 
 
 export default class DepotsPage extends Component {
@@ -24,6 +25,7 @@ export default class DepotsPage extends Component {
     this.state = {
       name: "",
       reszleg: "",
+      Description: "",
       reszlegList: [],
       raktarList: [],
       id: 0,
@@ -32,6 +34,7 @@ export default class DepotsPage extends Component {
     this.handleNameChange = this.handleNameChange.bind(this);
     this.handleReszlegChange = this.handleReszlegChange.bind(this);
     this.fetchRaktarList = this.fetchRaktarList.bind(this);
+    this.handleDescriptionChange = this.handleDescriptionChange.bind(this);
   }
 
   componentDidMount() {
@@ -41,6 +44,11 @@ export default class DepotsPage extends Component {
       .then((data) => this.setState({ reszlegList: data }));
 
     this.fetchRaktarList();
+  }
+  handleDescriptionChange(e){
+    this.setState({
+      Description: e.target.value,
+    });
   }
 
   handleNameChange(e) {
@@ -90,6 +98,11 @@ export default class DepotsPage extends Component {
       </Grid>
       <Grid item xs={12} align="center">
         <FormControl>
+          <TextField required={false} type="text" placeholder="Raktár Leírása" onChange={this.handleDescriptionChange}/>
+        </FormControl>
+      </Grid>
+      <Grid item xs={12} align="center">
+        <FormControl>
           <InputLabel id="reszleg-label">Reszleg</InputLabel>
           <Select labelId="reszleg-label" value={this.state.reszleg} onChange={this.handleReszlegChange}>
             {this.state.reszlegList.map((reszleg) => (
@@ -124,7 +137,7 @@ export default class DepotsPage extends Component {
                         {raktar.name}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {raktar.részleg} {/* Add description if available */}
+                        {raktar.Description} {/* Add description if available */}
                       </Typography>
                     </CardContent>
                   </CardActionArea>

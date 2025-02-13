@@ -1,5 +1,6 @@
-import React, { Component } from "react";
-import { useParams } from "react-router-dom";
+import React, { Component, useState } from "react";
+import {useParams} from "react-router-dom"
+import { BrowserRouter as Router, Route, Routes, link, redirect } from "react-router-dom";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
@@ -18,32 +19,30 @@ import Radio from "@material-ui/core/Radio";
 import RadioGroup from "@material-ui/core/RadioGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 
-export default class Item extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      name: "",
-      price: 0,
-      description: "",
-      quantity: "",
-      barcode: "",
-    };
-    this.getIdFromUrl = this.getIdFromUrl.bind(this);
-  }
 
-  getIdFromUrl() {
-    const uuid = useParams();
-    console.log(uuid);
-  }
+function Item() {
+  const { uuid } = useParams();
 
-  render() {
-    return <div>
-      <h1>{this.getIdFromUrl}</h1>
-      <p>name: {this.state.name}</p>
-      <p>price: {this.state.price}</p>
-      <p>description: {this.state.description}</p>
-      <p>quantity: {this.state.quantity}</p>
-      <p>barcode: {this.state.barcode}</p>
-    </div>;
-  }
+  const [state, setState] = useState({
+    name: "",
+    price: 0,
+    description: "",
+    quantity: "",
+    barcode: "",
+  });
+
+  
+
+  return (
+    <div>
+      <h1>{uuid}</h1>
+      <p>name: {state.name}</p>
+      <p>price: {state.price}</p>
+      <p>description: {state.description}</p>
+      <p>quantity: {state.quantity}</p>
+      <p>barcode: {state.barcode}</p>
+    </div>
+  );
 }
+
+export default Item;
