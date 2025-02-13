@@ -7,7 +7,7 @@ class ItemsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = items
-        fields = ['id', 'name', 'barcode', 'description', 'mennyiség', 'Tárgyak']
+        fields = ['id', 'name', 'barcode', 'Leirás', 'Mennyiség', 'Depot']
 
 
 class RaktárSerializer(serializers.ModelSerializer):
