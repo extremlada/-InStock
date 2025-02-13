@@ -4,6 +4,7 @@ html, body{
     padding: 0;
     font-family: 'Roboto', sans-serif;
     background-color: #f2c2c2;
+    overflow: auto;
 }
 
 #main{
@@ -24,4 +25,5 @@ html, body{
 .MuiCard-root:hover {
     transform: scale(1.05);
     transition: transform 0.3s ease-in-out;
+    overflow: auto;
   }

@@ -14,7 +14,7 @@ class RaktárSerializer(serializers.ModelSerializer):
     Tárgyak = ItemsSerializer(many=True, required=False, read_only=True)
     class Meta:
         model = raktar
-        fields = ['id', 'name', 'részleg', 'Tárgyak']
+        fields = ['id', 'name', 'részleg', 'Tárgyak', 'Description']
 
 
 class RészlegSerializer(serializers.ModelSerializer):
