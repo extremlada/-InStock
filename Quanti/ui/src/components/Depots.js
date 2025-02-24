@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { useNavigate } from "react-router-dom";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
@@ -19,7 +20,7 @@ import FormControlLabel from "@material-ui/core/FormControlLabel";
 import { formHelperTextClasses } from "@mui/material";
 
 
-export default class DepotsPage extends Component {
+export class DepotsPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -35,6 +36,7 @@ export default class DepotsPage extends Component {
     this.handleReszlegChange = this.handleReszlegChange.bind(this);
     this.fetchRaktarList = this.fetchRaktarList.bind(this);
     this.handleDescriptionChange = this.handleDescriptionChange.bind(this);
+    this.handleCardClikcked = this.handleCardClikcked.bind(this);
   }
 
   componentDidMount() {
@@ -81,7 +83,15 @@ export default class DepotsPage extends Component {
   fetchRaktarList() {
     fetch('/api/raktar/')
       .then((response) => response.json())
-      .then((data) => this.setState({ raktarList: data }));
+      .then((data) => {
+        this.setState({ raktarList: data });
+        console.log(data);
+      });
+  }
+
+  handleCardClikcked(uuid){
+    console.log("Card clicked", uuid);
+    this.props.navigate(`/raktar/${uuid}`);
   }
 
   render() {
@@ -123,7 +133,7 @@ export default class DepotsPage extends Component {
           <Grid container spacing={2}>
             {this.state.raktarList.map((raktar) => (
               <Grid item xs={12} sm={6} md={3} lg={2} xl={2} key={raktar.id}>
-                <Card>
+                <Card onClick={() => this.handleCardClikcked(raktar.id)}>
                   <CardActionArea>
                     <CardMedia
                       component="img"
@@ -149,3 +159,10 @@ export default class DepotsPage extends Component {
     </Grid>;
   }
 }
+
+function DepotsPageWrapper() {
+  const navigate = useNavigate();
+  return <DepotsPage navigate={navigate} />;
+}
+
+export default DepotsPageWrapper;
