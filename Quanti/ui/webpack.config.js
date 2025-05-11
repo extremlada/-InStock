@@ -5,7 +5,8 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "./static/frontend"),
-    filename: "[name].js",
+    filename: "[name].[contenthash].js",
+    publicPath: "/static/frontend/",
   },
   module: {
     rules: [
@@ -24,9 +25,18 @@ module.exports = {
   plugins: [
     new webpack.DefinePlugin({
       "process.env": {
-        // This has effect on the react lib size
-        NODE_ENV: JSON.stringify("production"),
+        NODE_ENV: JSON.stringify("development"),
       },
     }),
   ],
+  mode: "development",
+  devServer: {
+    static: {
+      directory: path.join(__dirname, "static"),
+    },
+    compress: true,
+    port: 3000,
+    hot: true,
+    historyApiFallback: true,
+  },
 };
