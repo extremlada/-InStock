@@ -1,0 +1,32 @@
+{
+  "status": "done",
+  "assets": {
+    "main.js": {
+      "name": "main.js",
+      "path": "D:\\pythoncodes\\Quanti\\env\\Quanti\\ui\\static\\frontend\\main.js",
+      "publicPath": "/static/frontend/main.js"
+    },
+    "main.js.LICENSE.txt": {
+      "name": "main.js.LICENSE.txt",
+      "path": "D:\\pythoncodes\\Quanti\\env\\Quanti\\ui\\static\\frontend\\main.js.LICENSE.txt",
+      "publicPath": "/static/frontend/main.js.LICENSE.txt"
+    },
+    "vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js": {
+      "name": "vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js",
+      "path": "D:\\pythoncodes\\Quanti\\env\\Quanti\\ui\\static\\frontend\\vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js",
+      "publicPath": "/static/frontend/vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js"
+    },
+    "vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js.LICENSE.txt": {
+      "name": "vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js.LICENSE.txt",
+      "path": "D:\\pythoncodes\\Quanti\\env\\Quanti\\ui\\static\\frontend\\vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js.LICENSE.txt",
+      "publicPath": "/static/frontend/vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js.LICENSE.txt"
+    }
+  },
+  "chunks": {
+    "main": [
+      "vendors-node_modules_material-ui_core_esm_Button_Button_js-node_modules_material-ui_core_esm_-9310ad.js",
+      "main.js"
+    ]
+  },
+  "publicPath": "/static/frontend/"
+}
