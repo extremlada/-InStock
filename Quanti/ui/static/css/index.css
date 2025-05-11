@@ -3,7 +3,8 @@ html, body{
     margin: 0;
     padding: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: #f2c2c2;
+    background-color: #ffffff;
+    overflow-y: auto;
 }
 
 #main{
@@ -12,7 +13,7 @@ html, body{
     height: 100%;
     left: 0%;
     right: 0%;
-    overflow: auto;
+    overflow-y: auto;
 }
 
 #app{
@@ -25,5 +26,42 @@ html, body{
 .MuiCard-root:hover {
     transform: scale(1.05);
     transition: transform 0.3s ease-in-out;
-    overflow: auto;
 }
+
+.chart canvas {
+    max-width: 500px;
+    max-height: 200px;
+    height: auto !important;
+    width: 100% !important;
+}
+.chart {
+    justify-items: center;
+    margin-bottom: 40px;
+}
+
+.sidebar {
+    width: 200px;
+    background-color: #f0f0f0;
+    padding: 1rem;
+    height: 100vh;
+}
+
+.sidebar h2 {
+  margin-top: 0;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin-bottom: 1rem;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
+  

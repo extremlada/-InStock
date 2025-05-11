@@ -2,12 +2,10 @@ from rest_framework import serializers
 from .models import items, raktar, reszleg
 
 
-
 class ItemsSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = items
-        fields = ['id', 'name', 'barcode', 'Leirás', 'Mennyiség', 'Depot']
+        fields = ['id', 'name', 'barcode', 'Leirás', 'Mennyiség', 'Depot', 'Date', 'muvelet']
 
 
 class RaktárSerializer(serializers.ModelSerializer):

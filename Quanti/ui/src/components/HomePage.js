@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import YourDepotPage from "./YourDepot";
+import DivisionPage from "./Division";
 import DepotsPage from "./Depots";
 import ItemsPage from "./Items";
-import { BrowserRouter as Router, Route, Routes, link, redirect } from "react-router-dom";
+import Home from "./Home";
+import { Routes, Route } from "react-router-dom";
 
 export default class HomePage extends Component {
   constructor(props) {
@@ -11,14 +12,14 @@ export default class HomePage extends Component {
 
   render() {
     return (
-      <Router>
+      <div>
         <Routes>
-            <Route exact path="/" element={<h1> Home </h1>}/>
-            <Route path="/reszleg" element={<YourDepotPage />} />
-            <Route path="/raktar" element={<DepotsPage />} />
-            <Route path="/raktar/:uuid" element={<ItemsPage />} />
+          <Route exact path="/" element={<Home/>} />
+          <Route path="/reszleg" element={<DivisionPage />} />
+          <Route path="/raktar" element={<DepotsPage />} />
+          <Route path="/raktar/:uuid" element={<ItemsPage />} />
         </Routes>
-      </Router>
+      </div>
     );
   }
 }
