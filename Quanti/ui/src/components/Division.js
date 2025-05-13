@@ -30,7 +30,8 @@ import Chip from "@mui/material/Chip";
 
 class DivisionPage extends Component {
   constructor(props) {
-    super(props);    this.state = {
+    super(props);    
+    this.state = {
       name: "",
       reszleg: "",
       Description: "",

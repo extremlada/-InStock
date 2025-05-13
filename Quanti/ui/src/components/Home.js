@@ -49,13 +49,13 @@ function Home() {
   const [showBevetel, setShowBevetel] = useState(true);
 
   const fetchStatistics = () => {
-    fetch('http://localhost:8000/api/statistics/')
+    fetch('api/statistics/')
       .then(res => res.json())
       .then(data => setData(data));
   };
 
   const fetchItems = () => {
-    axios.get('http://localhost:8000/api/items/')
+    axios.get('api/items/')
       .then(res => {
         setItems(res.data);
         // If any of the items have the refresh_statistics flag, update statistics

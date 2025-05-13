@@ -15,8 +15,8 @@ export default class HomePage extends Component {
       <div>
         <Routes>
           <Route exact path="/" element={<Home/>} />
-          <Route path="/reszleg" element={<DivisionPage />} />
-          <Route path="/raktar" element={<DepotsPage />} />
+          <Route exact path="/reszleg" element={<DivisionPage />} />
+          <Route exact path="/raktar" element={<DepotsPage />} />
           <Route path="/raktar/:uuid" element={<ItemsPage />} />
         </Routes>
       </div>
