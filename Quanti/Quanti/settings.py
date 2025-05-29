@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
+AUTH_USER_MODEL = 'api.Account'
 
 # Application definition
 
@@ -153,3 +154,4 @@ CORS_ALLOWED_ORIGINS = [
 # (Fejlesztés alatt: csak ideiglenesen ajánlott!)
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+

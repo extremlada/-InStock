@@ -1,18 +1,20 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import DepotsPage from './components/Depots';
-import DivisionPage from './components/Division';
+import DepotsPageWrapper from './components/Depots';
+import DivisionPageWrapper from './components/Division';
+import HomePageWrapper from './components/Home';
+import Login from './components/LogIn';
 
 function App() {
   return (
-    <Router>
       <Routes>
-        <Route path="/raktar" element={<DepotsPage />} />
-        <Route path="/raktar/:id" element={<DepotsPage />} />
-        <Route path="/reszleg" element={<DivisionPage />} />
-        <Route path="/reszleg/:id" element={<DivisionPage />} />
+        <Route path="/" element={<HomePageWrapper />} />
+        <Route path="/raktar" element={<DepotsPageWrapper />} />
+        <Route path="/raktar/:id" element={<DepotsPageWrapper />} />
+        <Route path="/reszleg" element={<DivisionPageWrapper />} />
+        <Route path="/reszleg/:id" element={<DivisionPageWrapper />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
-    </Router>
   );
 }
 

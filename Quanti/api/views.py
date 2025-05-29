@@ -6,6 +6,8 @@ from .models import raktar, reszleg, items
 from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer
 from django.db.models import Sum
 from datetime import datetime, timedelta
+
+
 from django.db.models.functions import TruncWeek  # Add this import for weekly breakdowns
 
 
@@ -100,6 +102,10 @@ class RaktarViewId(APIView):
         
         serializer = ItemsSerializer(result_items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
 
 
 class ItemsViewId(APIView):
