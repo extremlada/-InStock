@@ -1,13 +1,13 @@
 import React, { Component } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "@material-ui/core/Button";
-import Grid from "@material-ui/core/Grid";
-import Typography from "@material-ui/core/Typography";
-import TextField from "@material-ui/core/TextField";
-import FormHelperText from "@material-ui/core/FormHelperText";
-import FormControl from "@material-ui/core/FormControl";
-import InputLabel from "@material-ui/core/InputLabel";
-import Select from "@material-ui/core/Select";
+import Button from "@mui/material/Button";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import FormHelperText from "@mui/material/FormHelperText";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -16,7 +16,6 @@ import CardActionArea from "@mui/material/CardActionArea";
 import { Box, Stack } from "@mui/material";
 import Paper from "@mui/material/Paper";
 import Sidebar from "./sidebar";
-//icons
 import InputAdornment from "@mui/material/InputAdornment";
 import AddBusinessIcon from "@mui/icons-material/AddBusiness";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
@@ -30,7 +29,8 @@ import Chip from "@mui/material/Chip";
 
 class DivisionPage extends Component {
   constructor(props) {
-    super(props);    this.state = {
+    super(props);    
+    this.state = {
       name: "",
       reszleg: "",
       Description: "",
@@ -68,7 +68,6 @@ class DivisionPage extends Component {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         name: this.state.name,
-        részleg: this.state.reszleg,
       }),
     };
     fetch('/api/reszleg/', requestOptions).then((response) => 
@@ -131,7 +130,7 @@ class DivisionPage extends Component {
                 }
               }}
             >
-              Raktáraid
+              Részlegek
             </Typography>
             <Typography 
               variant="subtitle1" 
@@ -141,7 +140,7 @@ class DivisionPage extends Component {
                 mb: 4 
               }}
             >
-              Kezeld és hozz létre új raktárakat
+              Kezeld és hozz létre új részlegeket
             </Typography>
           </Grid>
           
@@ -167,15 +166,15 @@ class DivisionPage extends Component {
                   alignItems: 'center'
                 }}
               >
-                <AddBusinessIcon sx={{ mr: 1, color: '#3b82f6' }} /> Új raktár létrehozása
+                <AddBusinessIcon sx={{ mr: 1, color: '#3b82f6' }} /> Új részleg létrehozása
               </Typography>
               
               <Stack spacing={3}>
                 <TextField
                   required
                   fullWidth
-                  label="Raktár neve"
-                  placeholder="Raktár neve"
+                  label="Részleg neve"
+                  placeholder="Részleg neve"
                   variant="outlined"
                   onChange={this.handleNameChange}
                   InputProps={{
@@ -195,58 +194,6 @@ class DivisionPage extends Component {
                   }}
                 />
                 
-                <TextField
-                  fullWidth
-                  label="Raktár leírása"
-                  placeholder="Raktár leírása"
-                  variant="outlined"
-                  multiline
-                  rows={3}
-                  onChange={this.handleDescriptionChange}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <DescriptionIcon sx={{ color: '#64748b' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 2,
-                      '&:hover fieldset': {
-                        borderColor: '#3b82f6',
-                      },
-                    }
-                  }}
-                />
-                
-                <FormControl fullWidth variant="outlined">
-                  <InputLabel id="reszleg-label">Részleg</InputLabel>
-                  <Select
-                    labelId="reszleg-label"
-                    label="Részleg"
-                    value={this.state.reszleg}
-                    onChange={this.handleReszlegChange}
-                    sx={{
-                      borderRadius: 2,
-                      '&:hover fieldset': {
-                        borderColor: '#3b82f6',
-                      },
-                    }}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <ApartmentIcon sx={{ color: '#64748b', ml: 2 }} />
-                      </InputAdornment>
-                    }
-                  >
-                    {this.state.reszlegList.map((reszleg) => (
-                      <MenuItem key={reszleg.id} value={reszleg.id}>
-                        {reszleg.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <FormHelperText>Válassz egy részleget</FormHelperText>
-                </FormControl>
                 
                 <Button 
                   fullWidth
@@ -270,7 +217,7 @@ class DivisionPage extends Component {
                   }}
                   startIcon={<AddIcon />}
                 >
-                  Raktár létrehozása
+                  Részleg létrehozása
                 </Button>
               </Stack>
             </Paper>
@@ -288,7 +235,7 @@ class DivisionPage extends Component {
                 alignItems: 'center'
               }}
             >
-              <InventoryIcon sx={{ mr: 1, color: '#3b82f6' }} /> Elérhető raktárak
+              <InventoryIcon sx={{ mr: 1, color: '#3b82f6' }} /> Elérhető részlegek
             </Typography>
             
             <Grid container spacing={3}>
@@ -308,7 +255,7 @@ class DivisionPage extends Component {
                   >
                     <WarehouseIcon sx={{ fontSize: 60, color: '#cbd5e1', mb: 2 }} />
                     <Typography sx={{ color: '#64748b' }}>
-                      Még nincs létrehozott raktár
+                      Még nincs létrehozott részleg
                     </Typography>
                   </Paper>
                 </Grid>
