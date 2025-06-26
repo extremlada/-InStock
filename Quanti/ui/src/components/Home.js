@@ -48,6 +48,17 @@ function Home() {
   });
   const [showBevetel, setShowBevetel] = useState(true);
 
+<<<<<<< HEAD
+=======
+  componentDidMount() {
+    this.fetchStatistics();
+    this.fetchItems();
+  }
+
+  fetchStatistics() {
+    fetch(`${window.location.origin}/api/statistics/`)
+=======
+>>>>>>> 47cea65 (Remove merge conflict markers from Home.js)
   const fetchStatistics = () => {
     fetch('api/statistics/')
       .then(res => res.json())
