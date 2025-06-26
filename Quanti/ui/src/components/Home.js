@@ -47,7 +47,6 @@ class Home extends Component {
     this.getBackgroundColor = this.getBackgroundColor.bind(this);
   }
 
-<<<<<<< HEAD
   componentDidMount() {
     this.fetchStatistics();
     this.fetchItems();
