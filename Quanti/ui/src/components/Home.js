@@ -54,15 +54,10 @@ class Home extends Component {
 
   fetchStatistics() {
     fetch(`${window.location.origin}/api/statistics/`)
-=======
-  const fetchStatistics = () => {
-    fetch('api/statistics/')
->>>>>>> 98066153cef0d30b488068c24a54b977594b5fa0
       .then(res => res.json())
       .then(data => this.setState({ data }));
   }
 
-<<<<<<< HEAD
   fetchItems() {
     fetch(`${window.location.origin}/api/items/`)
       .then(res => res.json())
@@ -70,15 +65,6 @@ class Home extends Component {
         this.setState({ items });
         if (items.some(item => item.refresh_statistics)) {
           this.fetchStatistics();
-=======
-  const fetchItems = () => {
-    axios.get('api/items/')
-      .then(res => {
-        setItems(res.data);
-        // If any of the items have the refresh_statistics flag, update statistics
-        if (res.data.some(item => item.refresh_statistics)) {
-          fetchStatistics();
->>>>>>> 98066153cef0d30b488068c24a54b977594b5fa0
         }
       });
   }

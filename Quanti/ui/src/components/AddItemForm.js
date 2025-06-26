@@ -128,7 +128,7 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
             fullWidth
             value={formData.description}
             onChange={handleChange}
-            required
+            //required
           />
         </DialogContent>
         <DialogActions>

@@ -21,7 +21,7 @@ from pyzbar.pyzbar import decode
 def read_barcode_from_webcam():
     camera_id = 0
     delay = 1
-    rtsp_url = 'http://192.168.2.124:8080/video'
+    rtsp_url = 'http://192.168.0.124:8080/video'
     window_name = 'OpenCV Barcode'
 
     bd = cv2.barcode.BarcodeDetector()
