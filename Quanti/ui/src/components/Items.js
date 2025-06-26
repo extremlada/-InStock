@@ -55,19 +55,11 @@ class Item extends Component {
   }
 
   componentDidMount() {
-    const { uuid } = this.props.params;
-    console.log("uuid", uuid);
-
-    // Fetch raktár details first
-    fetch(`/api/raktar-details/${uuid}`)
-      .then((response) => response.json())
-      .then((data) => {
-        this.setState({ raktarName: data.name });
-      })
-      .catch((error) => console.error("Error fetching raktár details:", error));
-
+    console.log(this.props.params);
+    const { id } = this.props.params;
+    console.log("uuid", `${id}`);
     // Then fetch items
-    fetch(`/api/raktar/${uuid}`)
+    fetch(`/api/raktar/${id}`)
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -141,11 +133,11 @@ class Item extends Component {
   };
 
   handleQuoteFormSubmit = (formData) => {
-    const { uuid } = this.props.params;
+    const { id } = this.props.params;
     
     const itemData = {
       name: formData.name,
-      Depot: uuid,  // Still send UUID to server
+      Depot: id,  // Still send UUID to server
       Mennyiség: formData.mennyiség,
       barcode: formData.barcode,
       Leirás: formData.description

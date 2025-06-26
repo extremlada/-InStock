@@ -57,14 +57,18 @@ function Home() {
 
   fetchStatistics() {
     fetch(`${window.location.origin}/api/statistics/`)
+<<<<<<< HEAD
 =======
 >>>>>>> 47cea65 (Remove merge conflict markers from Home.js)
   const fetchStatistics = () => {
     fetch('api/statistics/')
+=======
+>>>>>>> c7403de (Changes to be committed)
       .then(res => res.json())
       .then(data => setData(data));
   };
 
+<<<<<<< HEAD
   const fetchItems = () => {
     axios.get('api/items/')
       .then(res => {
@@ -72,6 +76,15 @@ function Home() {
         // If any of the items have the refresh_statistics flag, update statistics
         if (res.data.some(item => item.refresh_statistics)) {
           fetchStatistics();
+=======
+  fetchItems() {
+    fetch(`${window.location.origin}/api/items/`)
+      .then(res => res.json())
+      .then(items => {
+        this.setState({ items });
+        if (items.some(item => item.refresh_statistics)) {
+          this.fetchStatistics();
+>>>>>>> c7403de (Changes to be committed)
         }
       });
   };
