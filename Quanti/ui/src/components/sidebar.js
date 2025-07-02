@@ -4,7 +4,7 @@ import { Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar } from '@mu
 import WarehouseIcon from '@mui/icons-material/Warehouse';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import SettingsIcon from '@mui/icons-material/Settings';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { Box, Typography, Divider, IconButton, Avatar } from '@mui/material';
@@ -195,7 +195,7 @@ function Sidebar() {
             letterSpacing: '0.5px'
           }}
         >
-          Egyéb
+          Eladás
         </Typography>
         
         <ListItem 
@@ -221,6 +221,9 @@ function Sidebar() {
         
         <ListItem 
           button={true}
+          component={Link}
+          // to="/eladas" // Uncomment this line if you have a route for sales
+          to="/eladas"
           sx={{
             py: 1.5,
             '&:hover .MuiListItemIcon-root': {
@@ -229,10 +232,10 @@ function Sidebar() {
           }}
         >
           <ListItemIcon>
-            <HelpOutlineIcon sx={{ color: '#64748b', transition: 'color 0.2s ease' }} />
+            <PointOfSaleIcon sx={{ color: '#64748b', transition: 'color 0.2s ease' }} />
           </ListItemIcon>
           <ListItemText 
-            primary="Súgó"
+            primary="Eladás"
             primaryTypographyProps={{ 
               fontWeight: 500, 
               color: '#334155' 

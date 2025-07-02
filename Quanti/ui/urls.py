@@ -6,5 +6,7 @@ urlpatterns = [
     path('reszleg', index),
     path('reszleg/<uuid:uuid>', index),
     path('raktar', index),
-    path('raktar/<uuid:uuid>', index)
+    path('raktar/<uuid:uuid>', index),
+    path('eladas', index),
+    path('elonezet', index),
 ]

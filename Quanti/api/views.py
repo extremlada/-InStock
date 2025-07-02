@@ -65,6 +65,27 @@ class RaktarView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class AggregatedItemView(APIView):
+    def get(self, request, barcode):
+        qs = items.objects.filter(barcode=barcode)
+        if not qs.exists():
+            return Response({"error": "Termék nem található"}, status=status.HTTP_404_NOT_FOUND)
+
+        total_be = qs.filter(muvelet="BE").aggregate(Sum("Mennyiség"))["Mennyiség__sum"] or 0
+        total_ki = qs.filter(muvelet="KI").aggregate(Sum("Mennyiség"))["Mennyiség__sum"] or 0
+        aktualis_mennyiseg = total_be - total_ki
+
+        legutobbi = qs.order_by("-Date").first()
+
+        return Response({
+            "name": legutobbi.name,
+            "description": legutobbi.Leirás,
+            "barcode": barcode,
+            "mennyiseg": aktualis_mennyiseg,
+            "Dátum": legutobbi.Date.isoformat(),
+            "Depot": legutobbi.Depot.id,
+            "id": legutobbi.id,
+        })
 
 class RaktarViewId(APIView):
     def get(self, request, uuid, format=None):
@@ -102,10 +123,6 @@ class RaktarViewId(APIView):
         
         serializer = ItemsSerializer(result_items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-
-
 
 
 class ItemsViewId(APIView):

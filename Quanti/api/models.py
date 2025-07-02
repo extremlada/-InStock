@@ -102,3 +102,26 @@ class items(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.get_muvelet_display()}"
+
+class Invoice(models.Model):
+    szamla_szam = models.CharField(max_length=50, unique=True)
+    kelt = models.DateField(auto_now_add=True)
+    elado_nev = models.CharField(max_length=255)
+    elado_cim = models.CharField(max_length=255)
+    elado_adoszam = models.CharField(max_length=20)
+    vevo_nev = models.CharField(max_length=255)
+    vevo_cim = models.CharField(max_length=255, blank=True, null=True)
+    vevo_adoszam = models.CharField(max_length=20, blank=True, null=True)
+    fizetesi_mod = models.CharField(max_length=100, default="Átutalás")
+    fizetesi_hatarido = models.DateField(blank=True, null=True)
+    megjegyzes = models.TextField(blank=True, null=True)
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, related_name="items", on_delete=models.CASCADE)
+    termek_nev = models.CharField(max_length=255)
+    mennyiseg = models.DecimalField(max_digits=10, decimal_places=2)
+    egysegar = models.DecimalField(max_digits=12, decimal_places=2)
+    afa_kulcs = models.DecimalField(max_digits=4, decimal_places=2)  # pl. 27.00
+    afa_ertek = models.DecimalField(max_digits=12, decimal_places=2)
+    netto_osszeg = models.DecimalField(max_digits=12, decimal_places=2)
+    brutto_osszeg = models.DecimalField(max_digits=12, decimal_places=2)
