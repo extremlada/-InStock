@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ReszlegView, RaktarView, ItemsView, RaktarViewId, ItemsViewId, statistics_view, Részleg_details
+from .views import AggregatedItemView,ReszlegView, RaktarView, ItemsView, RaktarViewId, ItemsViewId, statistics_view, Részleg_details
 
 
 urlpatterns = [
@@ -10,5 +10,5 @@ urlpatterns = [
     path('items/', ItemsView.as_view(), name='Items_Lista'),
     path('item/<uuid:uuid>', ItemsViewId.as_view(), name='Items_Lista'),
     path('statistics/', statistics_view),
-
-]
+    path('barcode/<int:barcode>', AggregatedItemView.as_view(), name='Items_Barcode'),
+    ]
