@@ -10,7 +10,10 @@ import MenuItem from "@mui/material/MenuItem";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import QuoteForm from "./AddItemForm";
 import Sidebar from "./sidebar";
-import { Box, Paper } from "@mui/material";
+import { Box, Paper, Modal, FormControl, InputLabel, Select } from "@mui/material";
+import * as XLSX from "xlsx";
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DownloadIcon from '@mui/icons-material/Download';
 
 class Item extends Component {
   constructor(props) {
@@ -21,6 +24,10 @@ class Item extends Component {
       selectedItem: null,
       showQuoteForm: false,
       raktarName: "",
+      importPreview: null, // ideiglenes tároló a beolvasott adatoknak
+      importColumns: [],   // oszlopnevek a fájlból
+      columnMapping: {},   // felhasználó által választott párosítás
+      showImportModal: false
     };
     this.handleMenuOpen = this.handleMenuOpen.bind(this);
     this.handleMenuClose = this.handleMenuClose.bind(this);
@@ -152,8 +159,48 @@ class Item extends Component {
       });
   }
 
+  // CSV/Excel import
+  handleImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // tömb tömbben, első sor: fejléc
+      const columns = json[0] || [];
+      const rows = json.slice(1).map(rowArr =>
+        Object.fromEntries(columns.map((col, idx) => [col, rowArr[idx]]))
+      );
+      this.setState({
+        importPreview: rows,
+        importColumns: columns,
+        columnMapping: {},
+        showImportModal: true
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // CSV/Excel export
+  handleExport = () => {
+    const { items } = this.state;
+    const exportData = items.map(item => ({
+      Név: item.name,
+      Mennyiség: item.Mennyiség || item.quantity,
+      Leirás: item.Leirás || item.description || "",
+      barcode: item.barcode
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Termékek");
+    XLSX.writeFile(workbook, "raktar_termekek.xlsx");
+  };
+
   render() {
-    const { anchorEl, items, showQuoteForm, raktarName } = this.state;
+    const { anchorEl, items, showQuoteForm, raktarName, showImportModal, importColumns, columnMapping, importPreview } = this.state;
 
     // Táblázat oszlopok
     const columns = [
@@ -180,6 +227,40 @@ class Item extends Component {
       },
     ];
 
+    const modelFields = [
+      { key: "name", label: "Név" },
+      { key: "barcode", label: "Vonalkód" },
+      { key: "Mennyiség", label: "Mennyiség" },
+      { key: "Leirás", label: "Leírás" }
+    ];
+
+    const handleMappingChange = (field, value) => {
+      this.setState(prev => ({
+        columnMapping: { ...prev.columnMapping, [field]: value }
+      }));
+    };
+
+    const handleImportConfirm = async () => {
+      const { columnMapping, importPreview } = this.state;
+      for (const row of importPreview) {
+        await fetch("/api/items/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: row[columnMapping.name] || "",
+            Depot: this.props.params.id,
+            Mennyiség: row[columnMapping.Mennyiség] || 1,
+            barcode: row[columnMapping.barcode] || "",
+            Leirás: row[columnMapping.Leirás] || "",
+            muvelet: "BE"
+          }),
+        });
+      }
+      this.setState({ showImportModal: false, importPreview: null, columnMapping: {} });
+      this.componentDidMount();
+      alert("Import sikeres!");
+    };
+
     return (
       <Box sx={{ display: 'flex', minHeight: '100vh', background: '#fafafa' }}>
         <Sidebar />
@@ -187,6 +268,34 @@ class Item extends Component {
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#232526', mb: 4 }}>
             Raktár termékek
           </Typography>
+
+          {/* Import/Export gombok */}
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<UploadFileIcon />}
+              >
+                Import (CSV/Excel)
+                <input
+                  type="file"
+                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                  hidden
+                  onChange={this.handleImport}
+                />
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={this.handleExport}
+              >
+                Export (Excel)
+              </Button>
+            </Grid>
+          </Grid>
 
           {/* Hozzáadás gomb */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -275,14 +384,82 @@ class Item extends Component {
             onSubmit={this.handleQuoteFormSubmit}
             currentRaktar={raktarName}
           />
+
+          {/* Importálás oszlopainak párosítása modal */}
+          {showImportModal && (
+            <Modal open={showImportModal} onClose={() => this.setState({ showImportModal: false })}>
+              <Box sx={{
+                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                bgcolor: 'background.paper', boxShadow: 24, p: 4, borderRadius: 2, minWidth: 350
+              }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Oszlopok párosítása</Typography>
+                {modelFields.map(field => (
+                  <FormControl fullWidth sx={{ mb: 2 }} key={field.key}>
+                    <InputLabel>{field.label}</InputLabel>
+                    <Select
+                      value={columnMapping[field.key] || ""}
+                      label={field.label}
+                      onChange={e => handleMappingChange(field.key, e.target.value)}
+                    >
+                      <MenuItem value="">Nincs</MenuItem>
+                      {importColumns.map(col => (
+                        <MenuItem key={col} value={col}>{col}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                ))}
+                <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                  Minta az importált adatokból:
+                </Typography>
+                <Box sx={{ maxHeight: 200, overflow: 'auto', mb: 2 }}>
+                  <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        {importColumns.map(col => (
+                          <th key={col} style={{ border: '1px solid #ddd', background: '#f5f5f5', padding: 4 }}>{col}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(importPreview || []).slice(0, 3).map((row, idx) => (
+                        <tr key={idx}>
+                          {importColumns.map(col => (
+                            <td key={col} style={{ border: '1px solid #eee', padding: 4 }}>
+                              {row[col]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Box>
+                <Button
+                  variant="contained"
+                  onClick={handleImportConfirm}
+                  sx={{
+                    width: '100%',
+                    borderRadius: 2,
+                    py: 1.5,
+                    background: 'linear-gradient(90deg, #2563eb, #3b82f6)',
+                    color: '#fff',
+                    fontWeight: 500,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      background: 'linear-gradient(90deg, #1d4ed8, #2563eb)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(59, 130, 246, 0.5)'
+                    }
+                  }}
+                >
+                  Importálás megerősítése
+                </Button>
+              </Box>
+            </Modal>
+          )}
         </Box>
       </Box>
     );
   }
 }
 
-// Wrapper, hogy a useParams hookot class komponenshez is használhasd
-export default function ItemWrapper() {
-  const params = useParams();
-  return <Item params={params} />;
-}
+export default (props) => <Item {...props} params={useParams()} />;
