@@ -463,3 +463,4 @@ class Item extends Component {
 }
 
 export default (props) => <Item {...props} params={useParams()} />;
+                           

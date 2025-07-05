@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-a**hb#m2b&8b4xy0uk_-k+d+@ceto_noipln8ych(=*6^$@!sw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'api.Account'
 
@@ -145,10 +145,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://192.168.2.30",
+    "http://192.168.2.30:3000",
+    "http://192.168.2.30:8000",
 ]
 
 # Ha nem tudod pontosan, honnan jön a kérés, és fejlesztés alatt vagy:
 # (Fejlesztés alatt: csak ideiglenesen ajánlott!)
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 

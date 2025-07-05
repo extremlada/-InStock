@@ -2,14 +2,35 @@ from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
-from .models import raktar, reszleg, items
-from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer
+from .models import raktar, reszleg, items, Transaction, TransactionType, TransactionItem
+from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer, TransactionSerializer
 from django.db.models import Sum
 from datetime import datetime, timedelta
-
+import uuid
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from django.views.generic import ListView
+from rest_framework.permissions import IsAuthenticated
 
 from django.db.models.functions import TruncWeek  # Add this import for weekly breakdowns
 
+
+
+class MobileSessionView(APIView):
+    def get(self, request):
+        token = str(uuid.uuid4())
+        url = f"https://c7a7-212-40-84-22.ngrok-free.app/mobile-scan?token={token}"
+        # Itt elmentheted a tokent adatbázisba, ha szükséges
+        return Response({"token": token, "url": url})
+
+class MobileBarcodeView(APIView):
+    def post(self, request):
+        token = request.data.get("token")
+        barcode = request.data.get("barcode")
+        # Itt ellenőrizheted és feldolgozhatod a tokent és a vonalkódot
+        print(f"Token: {token}, Barcode: {barcode}")
+        # ...adatbázisba mentés, stb...
+        return Response({"status": "ok"})
 
 class ReszlegView(APIView):
     serializer_class = RészlegSerializer
@@ -40,6 +61,7 @@ class Részleg_details(APIView):
 
 class RaktarView(APIView):
     serializer_class = RaktárSerializer
+    permission_classes = [IsAuthenticated]  # <-- EZT ADD HOZZÁ
 
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
@@ -49,11 +71,13 @@ class RaktarView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, format=None):
-        reszleg_id = request.query_params.get('reszleg', None)
-        if reszleg_id:
-            raktár = raktar.objects.filter(részleg=reszleg_id)
-        else:
+        user = request.user
+        if user.is_superuser:
             raktár = raktar.objects.all()
+        else:
+            if not user.is_authenticated:
+                return Response({"error": "Nincs jogosultság!"}, status=403)
+            raktár = user.allowed_warehouses.all()
         serializer = self.serializer_class(raktár, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -151,7 +175,8 @@ class ItemsView(APIView):
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            item = serializer.save()
+            create_transaction_for_item(item, item.muvelet, request.user if request.user.is_authenticated else None)
             # Return additional flag to indicate frontend should refresh statistics
             response_data = {
                 **serializer.data,
@@ -292,3 +317,68 @@ def statistics_view(request):
         'ev_ido': yearly_breakdown,
         'het_ido': weekly_breakdown,
     })
+
+def transaction_pdf(request, pk):
+    transaction = Transaction.objects.get(pk=pk)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="bizonylat_{transaction.unique_number}.pdf"'
+    p = canvas.Canvas(response)
+    p.drawString(100, 800, f"Bizonylat: {transaction.unique_number}")
+    p.drawString(100, 780, f"Típus: {transaction.transaction_type.label}")
+    p.drawString(100, 760, f"Dátum: {transaction.created_at.strftime('%Y-%m-%d %H:%M')}")
+    p.drawString(100, 740, f"Felhasználó: {transaction.user}")
+    y = 700
+    for item in transaction.items.all():
+        p.drawString(120, y, f"{item.item} - {item.quantity}")
+        y -= 20
+    p.showPage()
+    p.save()
+    return response
+
+class TransactionListView(APIView):
+    def get(self, request):
+        transactions = Transaction.objects.all().order_by('-created_at')
+        # Szűrés GET paraméterek alapján (pl. type, user, stb.)
+        ttype = request.GET.get("type")
+        if ttype:
+            transactions = transactions.filter(transaction_type__code=ttype)
+        # További szűrés: user, raktár, dátum, stb. (ha kell)
+        serializer = TransactionSerializer(transactions, many=True)
+        return Response(serializer.data)
+
+def create_transaction_for_item(item, muvelet_tipus, user=None):
+    try:
+        ttype = TransactionType.objects.get(code=muvelet_tipus)
+    except TransactionType.DoesNotExist:
+        raise ValueError(f"Nincs ilyen TransactionType: {muvelet_tipus}")
+    transaction = Transaction.objects.create(
+        transaction_type=ttype,
+        user=user,
+        source_warehouse=item.Depot if muvelet_tipus in ['KI', 'BE'] else None,
+        target_warehouse=None,
+        note=f"Automatikus bizonylat {ttype.label} művelethez"
+    )
+    TransactionItem.objects.create(
+        transaction=transaction,
+        item=item,
+        quantity=item.Mennyiség
+    )
+    return transaction
+
+class RestrictedAccessView(APIView):
+    def get(self, request, *args, **kwargs):
+        # Ellenőrizzük, hogy a felhasználónak van-e jogosultsága a kért raktárhoz
+        keresett_raktar_id = kwargs.get('uuid')  # Feltételezzük, hogy az URL-ben van a raktár azonosítója
+        if not request.user.is_superuser and not request.user.allowed_warehouses.filter(id=keresett_raktar_id).exists():
+            return Response({"error": "Nincs jogosultság!"}, status=403)
+        
+        # Ha van jogosultság, folytatódik a kérés feldolgozása
+        return super().get(request, *args, **kwargs)
+
+class TransactionTypeListView(APIView):
+    def get(self, request):
+        types = TransactionType.objects.all()
+        return Response([
+            {"code": t.code, "label": t.label, "description": t.description}
+            for t in types
+        ])

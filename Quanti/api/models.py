@@ -49,7 +49,8 @@ class Account(AbstractBaseUser):
     is_superuser = models.BooleanField(default=False)
     profile_image = models.ImageField(max_length=255,upload_to='profile_images',null=True, blank=True,   default='default.jpg')
     hide_email = models.BooleanField(default=True)
-    
+    allowed_warehouses = models.ManyToManyField('raktar', blank=True, related_name='users')
+    allowed_divisions = models.ManyToManyField('reszleg', blank=True, related_name='users')
 
     objects = MyAccountManager()
 
@@ -125,3 +126,34 @@ class InvoiceItem(models.Model):
     afa_ertek = models.DecimalField(max_digits=12, decimal_places=2)
     netto_osszeg = models.DecimalField(max_digits=12, decimal_places=2)
     brutto_osszeg = models.DecimalField(max_digits=12, decimal_places=2)
+
+class TransactionType(models.Model):
+    code = models.CharField(max_length=30, unique=True)
+    label = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.label} ({self.code})"
+
+class Transaction(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction_type = models.ForeignKey(TransactionType, on_delete=models.PROTECT)
+    unique_number = models.CharField(max_length=30, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey('Account', on_delete=models.SET_NULL, null=True, blank=True)
+    note = models.TextField(blank=True)
+    source_warehouse = models.ForeignKey('raktar', on_delete=models.SET_NULL, null=True, blank=True, related_name='source_transactions')
+    target_warehouse = models.ForeignKey('raktar', on_delete=models.SET_NULL, null=True, blank=True, related_name='target_transactions')
+
+    def save(self, *args, **kwargs):
+        if not self.unique_number:
+            self.unique_number = f"{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.unique_number} - {self.transaction_type.label}"
+
+class TransactionItem(models.Model):
+    transaction = models.ForeignKey(Transaction, related_name="items", on_delete=models.CASCADE)
+    item = models.ForeignKey('items', on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
