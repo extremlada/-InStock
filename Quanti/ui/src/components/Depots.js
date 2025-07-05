@@ -96,7 +96,11 @@ class DepotsPage extends Component {
   }
 
   fetchRaktarList() {
-    fetch('/api/raktar/')
+    fetch('/api/raktar/', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access')}`
+      }
+    })
       .then((response) => response.json())
       .then((data) => {
         this.setState({ raktarList: data });

@@ -7,12 +7,19 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import { Box, Typography, Divider, IconButton, Avatar } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const drawerWidth = 240;
 
 function Sidebar() {
+  const handleLogout = () => {
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
+    window.location.href = '/login';
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -242,6 +249,57 @@ function Sidebar() {
             }}
           />
         </ListItem>
+
+        <ListItem
+          button={true}
+          component={Link}
+          to="/bizonylatok"
+          sx={{
+            py: 1.5,
+            '&:hover .MuiListItemIcon-root': {
+              color: '#3b82f6'
+            }
+          }}
+        >
+          <ListItemIcon>
+            <SettingsIcon sx={{ color: '#64748b', transition: 'color 0.2s ease' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Bizonylatok"
+            primaryTypographyProps={{
+              fontWeight: 500,
+              color: '#334155'
+            }}
+          />
+        </ListItem>
+
+        <ListItem
+          button={true}
+          component={Link}
+          to="/mobil-qr"
+          sx={{
+            py: 1.5,
+            mt: 2,
+            background: '#e0e7ef',
+            borderRadius: '12px',
+            mx: 1,
+            mb: 1,
+            '&:hover .MuiListItemIcon-root': {
+              color: '#3b82f6'
+            }
+          }}
+        >
+          <ListItemIcon>
+            <QrCode2Icon sx={{ color: '#3b82f6', transition: 'color 0.2s ease' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Mobil vonalkód"
+            primaryTypographyProps={{
+              fontWeight: 600,
+              color: '#334155'
+            }}
+          />
+        </ListItem>
       </List>
       
       {/* Bottom section */}
@@ -292,7 +350,7 @@ function Sidebar() {
           </Typography>
         </Box>
         <Box sx={{ flexGrow: 1 }} />
-        <IconButton size="small">
+        <IconButton size="small" onClick={handleLogout}>
           <LogoutIcon fontSize="small" sx={{ color: '#64748b' }} />
         </IconButton>
       </Box>

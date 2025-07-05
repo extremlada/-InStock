@@ -36,7 +36,10 @@ class DivisionPage extends Component {
   handleCreateDivisions() {
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem('access')}` // <-- HOZZÁADVA
+      },
       body: JSON.stringify({ name: this.state.name }),
     };
     fetch('/api/reszleg/', requestOptions)
@@ -49,8 +52,22 @@ class DivisionPage extends Component {
 
   fetchReszlegList() {
     this.setState({ isLoading: true });
-    fetch('/api/reszleg/')
-      .then((response) => response.json())
+    fetch('/api/reszleg/', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access')}`
+      }
+    })
+      .then(async (response) => {
+        if (response.status === 401) {
+          // Token lejárt vagy nincs, irányítsd át a loginra!
+          window.location.href = "/login";
+          return [];
+        }
+        const data = await response.json();
+        // Ha nem tömb, akkor is üres tömböt adj vissza
+        if (!Array.isArray(data)) return [];
+        return data;
+      })
       .then((data) => {
         this.setState({
           reszlegList: data,

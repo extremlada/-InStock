@@ -9,4 +9,7 @@ urlpatterns = [
     path('raktar/<uuid:uuid>', index),
     path('eladas', index),
     path('elonezet', index),
+    path('mobile-scan', index),
+    path('login', index),
+    path('bizonylatok', index)
 ]
