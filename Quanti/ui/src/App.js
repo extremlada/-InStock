@@ -11,6 +11,7 @@ import MobileQrPage from './components/MobileQrPage';
 import MobileScanPage from './components/MobileScanPage';
 import TransactionList from './components/TransactionList';
 import RequireAuth from './components/RequireAuth';
+import ToDoBoard from './components/ToDoBoard';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/mobil-qr" element={<MobileQrPage />} />
                 <Route path="/mobile-scan" element={<MobileScanPage />} />
                 <Route path="/bizonylatok" element={<TransactionList />} />
+                <Route path="/todo" element={<ToDoBoard />} />
               </Routes>
             </RequireAuth>
           }

@@ -19,6 +19,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import ToDoListOverview from "./ToDoListOverview";
 
 ChartJS.register(
   CategoryScale,
@@ -149,6 +150,9 @@ class Home extends Component {
                 </Grid>
               ))}
           </Grid>
+
+          {/* ÚJ: ToDoBoard áttekintő */}
+          <ToDoListOverview />
         </Box>
       </Box>
     );

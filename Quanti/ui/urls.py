@@ -11,5 +11,6 @@ urlpatterns = [
     path('elonezet', index),
     path('mobile-scan', index),
     path('login', index),
-    path('bizonylatok', index)
+    path('bizonylatok', index),
+    path('todo', index)
 ]

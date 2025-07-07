@@ -5,6 +5,7 @@ import WarehouseIcon from '@mui/icons-material/Warehouse';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
@@ -19,6 +20,11 @@ function Sidebar() {
     localStorage.removeItem('refresh');
     window.location.href = '/login';
   };
+
+  function getCurrentUser() {
+  // Itt igazítsd a saját login logikádhoz!
+  return localStorage.getItem("username") || localStorage.getItem("email") || "ismeretlen";
+}
 
   return (
     <Drawer
@@ -250,6 +256,29 @@ function Sidebar() {
           />
         </ListItem>
 
+        <ListItem 
+          button={true}
+          component={Link}
+          to="/todo"
+          sx={{
+            py: 1.5,
+            '&:hover .MuiListItemIcon-root': {
+              color: '#3b82f6'
+            }
+          }}
+        >
+          <ListItemIcon>
+            <ListAltIcon sx={{ color: '#64748b', transition: 'color 0.2s ease' }} />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Todo"
+            primaryTypographyProps={{ 
+              fontWeight: 500, 
+              color: '#334155' 
+            }}
+          />
+        </ListItem>
+
         <ListItem
           button={true}
           component={Link}
@@ -337,7 +366,7 @@ function Sidebar() {
               lineHeight: 1.2
             }}
           >
-            Felhasználó
+            {getCurrentUser()}
           </Typography>
           <Typography
             variant="caption"
