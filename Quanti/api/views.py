@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from .models import raktar, reszleg, items, Transaction, TransactionType, TransactionItem
-from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer, TransactionSerializer
+from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer, TransactionSerializer, UserShortSerializer
 from django.db.models import Sum
 from datetime import datetime, timedelta
 import uuid
@@ -19,7 +19,7 @@ from django.db.models.functions import TruncWeek  # Add this import for weekly b
 class MobileSessionView(APIView):
     def get(self, request):
         token = str(uuid.uuid4())
-        url = f"https://c7a7-212-40-84-22.ngrok-free.app/mobile-scan?token={token}"
+        url = f"https://d526-212-40-84-22.ngrok-free.app/mobile-scan?token={token}"
         # Itt elmentheted a tokent adatbázisba, ha szükséges
         return Response({"token": token, "url": url})
 
@@ -382,3 +382,10 @@ class TransactionTypeListView(APIView):
             {"code": t.code, "label": t.label, "description": t.description}
             for t in types
         ])
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserShortSerializer(request.user)
+        return Response(serializer.data)

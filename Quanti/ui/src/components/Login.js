@@ -14,22 +14,29 @@ function Login() {
     e.preventDefault();
     setError('');
     try {
-    const res = await fetch('/api/token/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email: email,      // email mező
-        password: password // jelszó mező
-      }),
-    });
-      if (!res.ok) throw new Error('Hibás email vagy jelszó!');
+      const res = await fetch('/api/token/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
       const data = await res.json();
+      if (!res.ok) throw new Error('Hibás email vagy jelszó!');
+      if (!data.access) throw new Error('Nincs access token!');
       localStorage.setItem('access', data.access);
       localStorage.setItem('refresh', data.refresh);
-      // Opcionális: user adat lekérése
+
+      const userRes = await fetch('/api/current-user/', {
+        headers: { 'Authorization': `Bearer ${data.access}` }
+      });
+      if (!userRes.ok) throw new Error('Nem sikerült lekérni a felhasználót!');
+      const user = await userRes.json();
+      localStorage.setItem('username', user.username);
+      localStorage.setItem('email', user.email);
+
       navigate('/');
     } catch (err) {
       setError(err.message);
+      console.error(err);
     }
   };
 
