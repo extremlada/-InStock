@@ -75,19 +75,35 @@ class DepotsPage extends Component {
   }
   
   handleCreateDepot() {
-    console.log(this.state.reszleg);
+    const { name, reszleg, Description } = this.state;
+    if (!name || !reszleg) {
+      alert("A raktár neve és a részleg megadása kötelező.");
+      return;
+    }
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access')}`
+      },
       body: JSON.stringify({ 
-        name: this.state.name,
-        részleg: this.state.reszleg,
+        name: name,
+        részleg: reszleg,
+        Description: Description
       }),
     };
-    fetch('/api/raktar/', requestOptions).then((response) => 
-      response.json()).then((data) => {console.log(data)
-      this.fetchRaktarList();
-    });
+    fetch('/api/raktar/', requestOptions)
+      .then((response) => {
+        if (!response.ok) throw new Error("Hiba a raktár létrehozásakor");
+        return response.json();
+      })
+      .then((data) => {
+        this.setState({ name: "", reszleg: "", Description: "" });
+        this.fetchRaktarList();
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
   }
   handleReszlegChange(e) {
     this.setState({ 
