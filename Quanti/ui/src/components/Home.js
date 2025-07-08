@@ -20,6 +20,7 @@ import {
   Legend
 } from 'chart.js';
 import ToDoListOverview from "./ToDoListOverview";
+import CalendarWidget from "./CalendarWidget";
 
 ChartJS.register(
   CategoryScale,
@@ -151,8 +152,15 @@ class Home extends Component {
               ))}
           </Grid>
 
-          {/* ÚJ: ToDoBoard áttekintő */}
-          <ToDoListOverview />
+          {/* Két oszlopos elrendezés: balra naptár, jobbra ToDo áttekintő */}
+          <Grid container spacing={3} sx={{ mt: 4 }}>
+            <Grid item xs={12} md={6}>
+              <ToDoListOverview />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <CalendarWidget />
+            </Grid>
+          </Grid>
         </Box>
       </Box>
     );
