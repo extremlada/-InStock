@@ -1,4 +1,6 @@
-﻿asgiref==3.8.1
+altgraph==0.17.4
+asgiref==3.8.1
+charset-normalizer==3.4.2
 Django==5.2
 django-cors-headers==4.7.0
 djangorestframework==3.16.0
@@ -6,9 +8,17 @@ djangorestframework_simplejwt==5.5.0
 mysqlclient==2.2.7
 numpy==2.2.5
 opencv-python==4.11.0.86
+packaging==25.0
+pefile==2023.2.7
 pillow==11.1.0
+pyinstaller==6.14.1
+pyinstaller-hooks-contrib==2025.5
 PyJWT==2.9.0
+python-decouple==3.8
+pywin32-ctypes==0.2.3
 pyzbar==0.1.9
+reportlab==4.4.2
+setuptools==80.9.0
 sqlparse==0.5.3
 tzdata==2025.2
 gunicorn
