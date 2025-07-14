@@ -133,8 +133,9 @@ class DepotsPage extends Component {
     return (
       <Box sx={{ display: 'flex' }}>
         <Sidebar />
-        <Box sx={{ py: 10, px: 5 }}>
-          <Grid container spacing={3} justifyContent="center"> 
+        <Box sx={{ py: 10, px: 5 , width: '100%'}}>
+          <Grid container spacing={3} justifyContent="center">
+            <Stack spacing={3}>
             <Grid item xs={12}>
               <Typography 
                 component='h4' 
@@ -181,7 +182,9 @@ class DepotsPage extends Component {
                   borderRadius: 3,
                   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
                   background: 'linear-gradient(145deg, #ffffff, #f8fafc)',
-                  mb: 5
+                  mb: 5,
+                  width: 'fit-content',
+                  justifySelf: "center"
                 }}
               >
                 <Typography 
@@ -417,6 +420,7 @@ class DepotsPage extends Component {
                 )}
               </Grid>
             </Grid>
+            </Stack>
           </Grid>
         </Box>
       </Box>
