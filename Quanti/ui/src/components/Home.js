@@ -82,11 +82,13 @@ class Home extends Component {
     const labels = sortedData.map(item => this.formatDateLabel(item[timeKey], timeKey));
     const bevetelData = sortedData.map(item => item.bevetel || 0);
     const kiadasData = sortedData.map(item => item.kiadas || 0);
+    const profitData = sortedData.map((item, idx) => (bevetelData[idx] - kiadasData[idx]));
     return {
       labels,
       datasets: [
         { label: 'Bevétel', data: bevetelData, backgroundColor: 'rgba(75, 192, 192, 0.6)' },
-        { label: 'Kiadás', data: kiadasData, backgroundColor: 'rgba(255, 99, 132, 0.6)' }
+        { label: 'Kiadás', data: kiadasData, backgroundColor: 'rgba(255, 99, 132, 0.6)' },
+        { label: 'Profit', data: profitData, backgroundColor: 'rgba(76,175,80,0.5)' }
       ]
     };
   }
@@ -107,10 +109,10 @@ class Home extends Component {
     };
 
     const charts = [
-      { title: 'Éves Statisztika', data: this.chartDataIdo(data.ev_ido, 'year') },
-      { title: 'Havi Statisztika', data: this.chartDataIdo(data.honap_ido, 'day') },
-      { title: 'Heti Statisztika', data: this.chartDataIdo(data.het_ido, 'day') },
-      { title: 'Napi Idővonal', data: this.chartDataIdo(data.nap_ido, 'hour') }
+      { title: 'Éves Statisztika (Bevétel, Kiadás, Profit)', data: this.chartDataIdo(data.ev_ido, 'year') },
+      { title: 'Havi Statisztika (Bevétel, Kiadás, Profit)', data: this.chartDataIdo(data.honap_ido, 'day') },
+      { title: 'Heti Statisztika (Bevétel, Kiadás, Profit)', data: this.chartDataIdo(data.het_ido, 'day') },
+      { title: 'Napi Idővonal (Bevétel, Kiadás, Profit)', data: this.chartDataIdo(data.nap_ido, 'hour') }
     ];
 
     return (

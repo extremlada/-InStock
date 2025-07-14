@@ -120,6 +120,8 @@ class Item extends Component {
       name: formData.name,
       Depot: id,
       Mennyiség: formData.mennyiség,
+      egysegar: formData.egysegar,
+      ar: formData.ar,
       barcode: formData.barcode,
       Leirás: formData.description
     };
@@ -204,11 +206,12 @@ class Item extends Component {
 
     // Táblázat oszlopok
     const columns = [
-      { field: 'name', headerName: 'Név', width: 180, editable: true },
+      { field: 'name', headerName: 'Név', width: 180, editable: false },
       { field: 'Mennyiség', headerName: 'Mennyiség', width: 120 },
-      { field: 'Leirás', headerName: 'Leírás', width: 200, editable: true },
-      { field: 'quantity', headerName: 'Quantity', width: 120 },
+      { field: 'Leirás', headerName: 'Leírás', width: 200, editable: false },
       { field: 'barcode', headerName: 'Vonalkód', width: 150 },
+      { field: 'egysegar', headerName: 'Egységár', width: 150 },
+      { field: 'ar', headerName: 'Ár', width: 150 },
       {
         field: 'actions',
         headerName: 'Műveletek',
@@ -231,6 +234,8 @@ class Item extends Component {
       { key: "name", label: "Név" },
       { key: "barcode", label: "Vonalkód" },
       { key: "Mennyiség", label: "Mennyiség" },
+      { key: "egysegar", label: "Egységár" },
+      { key: "ar", label: "Ár" },
       { key: "Leirás", label: "Leírás" }
     ];
 
