@@ -38,14 +38,6 @@ class Item extends Component {
   // Csoportosítja az itemeket vonalkód szerint, mennyiséget összeadja
   processItems(data) {
     const groupedItems = data.reduce((acc, item) => {
-<<<<<<< HEAD
-      if (acc[item.barcode]) {
-        acc[item.barcode].quantity += item.quantity;
-      } else {
-        acc[item.barcode] = {
-          ...item,
-          id: item.id || item.barcode // minden itemnek legyen id-ja
-=======
       const qty = item.Mennyiség || item.quantity || 0;
       const price = item.egysegar || item.egysegar || 0;
       const ar = item.item_price || (qty * price);
@@ -57,7 +49,6 @@ class Item extends Component {
           ...item,
           id: item.id || item.barcode,
           ar: ar
->>>>>>> master
         };
       }
       return acc;
@@ -133,11 +124,6 @@ class Item extends Component {
     const itemData = {
       name: formData.name,
       Depot: id,
-<<<<<<< HEAD
-      Mennyiség: formData.mennyiség,
-      barcode: formData.barcode,
-      Leirás: formData.description
-=======
       Mennyiség: formData.Mennyiség,
       barcode: formData.barcode,
       Leirás: formData.description,
@@ -145,7 +131,6 @@ class Item extends Component {
       Leirás: formData.description || "",
       muvelet: "BE", // Alapértelmezett művelet,
       // NE küldj item_price-t!
->>>>>>> master
     };
 
     function getCookie(name) {
@@ -228,20 +213,12 @@ class Item extends Component {
 
     // Táblázat oszlopok
     const columns = [
-<<<<<<< HEAD
-      { field: 'name', headerName: 'Név', width: 180, editable: true },
-      { field: 'Mennyiség', headerName: 'Mennyiség', width: 120 },
-      { field: 'Leirás', headerName: 'Leírás', width: 200, editable: true },
-      { field: 'quantity', headerName: 'Quantity', width: 120 },
-      { field: 'barcode', headerName: 'Vonalkód', width: 150 },
-=======
       { field: 'name', headerName: 'Név', width: 180, editable: false },
       { field: 'Mennyiség', headerName: 'Mennyiség', width: 120 },
       { field: 'Leirás', headerName: 'Leírás', width: 200, editable: false },
       { field: 'barcode', headerName: 'Vonalkód', width: 150 },
       { field: 'egysegar', headerName: 'Egységár', width: 150 },
       { field: 'ar', headerName: 'Ár', width: 150 },
->>>>>>> master
       {
         field: 'actions',
         headerName: 'Műveletek',
@@ -264,11 +241,8 @@ class Item extends Component {
       { key: "name", label: "Név" },
       { key: "barcode", label: "Vonalkód" },
       { key: "Mennyiség", label: "Mennyiség" },
-<<<<<<< HEAD
-=======
       { key: "egysegar", label: "Egységár" },
       { key: "ar", label: "Ár" },
->>>>>>> master
       { key: "Leirás", label: "Leírás" }
     ];
 
@@ -501,7 +475,3 @@ class Item extends Component {
 }
 
 export default (props) => <Item {...props} params={useParams()} />;
-<<<<<<< HEAD
-                           
-=======
->>>>>>> master

@@ -107,37 +107,12 @@ export default function TransactionList() {
               <TableCell>Felhasználó</TableCell>
               <TableCell>Forrás raktár</TableCell>
               <TableCell>Cél raktár</TableCell>
-<<<<<<< HEAD
-=======
               <TableCell>Összes mennyiség</TableCell>
               <TableCell>Összes ár</TableCell>
->>>>>>> master
               <TableCell>Művelet</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-<<<<<<< HEAD
-            {transactions.map(tr => (
-              <TableRow key={tr.id}>
-                <TableCell>{tr.unique_number}</TableCell>
-                <TableCell>{tr.transaction_type.label}</TableCell>
-                <TableCell>{new Date(tr.created_at).toLocaleString()}</TableCell>
-                <TableCell>{tr.user ? (tr.user.username || tr.user.email) : "-"}</TableCell>
-                <TableCell>{tr.source_warehouse ? tr.source_warehouse.name : "-"}</TableCell>
-                <TableCell>{tr.target_warehouse ? tr.target_warehouse.name : "-"}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    href={`/api/transactions/${tr.id}/pdf/`}
-                    target="_blank"
-                  >
-                    PDF letöltés
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-=======
             {transactions.map(tr => {
               // Összes mennyiség és ár kiszámítása, profit is
               let totalQty = 0;
@@ -181,7 +156,6 @@ export default function TransactionList() {
                 </TableRow>
               );
             })}
->>>>>>> master
             {transactions.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} align="center">Nincs találat.</TableCell>

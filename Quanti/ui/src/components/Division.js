@@ -89,10 +89,7 @@ class DivisionPage extends Component {
         <Sidebar />
         <Box sx={{ py: 8, px: { xs: 2, md: 6 }, width: '100%' }}>
           <Grid container spacing={4} justifyContent="center">
-<<<<<<< HEAD
-=======
             <Stack spacing={3}>
->>>>>>> master
             {/* Fejléc */}
             <Grid item xs={12}>
               <Typography
@@ -144,13 +141,9 @@ class DivisionPage extends Component {
                   mb: 5,
                   display: 'flex',
                   flexDirection: 'column',
-<<<<<<< HEAD
-                  alignItems: 'center'
-=======
                   alignItems: 'center',
                   width: 'fit-content',
                   justifySelf: 'center'
->>>>>>> master
                 }}
               >
                 <Typography
@@ -352,10 +345,7 @@ class DivisionPage extends Component {
                 )}
               </Grid>
             </Grid>
-<<<<<<< HEAD
-=======
             </Stack>
->>>>>>> master
           </Grid>
         </Box>
       </Box>

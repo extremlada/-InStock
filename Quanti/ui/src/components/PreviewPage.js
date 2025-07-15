@@ -13,19 +13,6 @@ const PreviewPage = () => {
   const handleFinalize = async () => {
     if (!invoiceData?.items) return;
     for (const item of invoiceData.items) {
-<<<<<<< HEAD
-      await fetch('/api/items/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: item.termek_nev,
-          barcode: item.barcode,
-          Leirás: '', // ha kell
-          Mennyiség: Number(item.mennyiseg),
-          muvelet: 'KI',
-          Depot: item.depot, // <-- ez már az ID lesz!
-        }),
-=======
       const payload = {
         name: item.termek_nev,
         barcode: item.barcode,
@@ -42,7 +29,6 @@ const PreviewPage = () => {
           'Authorization': `Bearer ${localStorage.getItem('access')}`
         },
         body: JSON.stringify(payload),
->>>>>>> master
       });
     }
     // Navigálj vissza vagy mutass sikeres üzenetet

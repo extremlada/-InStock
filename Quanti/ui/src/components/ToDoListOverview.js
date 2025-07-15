@@ -39,11 +39,7 @@ export default function ToDoListOverview() {
       <Grid container spacing={2}>
         {["todo", "inprogress", "done"].map(status => (
           <Grid item xs={12} md={4} key={status}>
-<<<<<<< HEAD
-            <Paper sx={{ p: 2, minHeight: 300, background: "#f8fafc" }}>
-=======
             <Paper sx={{ p: 2, minHeight: 300, background: "#f8fafc", minWidth: '328.350px' }}>
->>>>>>> master
               <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
                 {statusMeta[status].icon}
                 <Typography variant="h6" sx={{ color: statusMeta[status].color, fontWeight: 700 }}>

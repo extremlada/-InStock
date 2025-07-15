@@ -68,9 +68,6 @@ const InvoiceForm = () => {
 
   // Raktárak lekérése
   useEffect(() => {
-<<<<<<< HEAD
-    fetch('/api/raktar/')
-=======
     fetch('/api/raktar/'
       , {
         headers: {
@@ -79,7 +76,6 @@ const InvoiceForm = () => {
         }
       }
     )
->>>>>>> master
       .then(res => res.json())
       .then(data => setRaktarak(data));
   }, []);
@@ -189,8 +185,6 @@ const InvoiceForm = () => {
     }));
   };
 
-<<<<<<< HEAD
-=======
   const handleSubmit = () => {
     // Ellenőrizzük, hogy minden tételhez ki van-e választva raktár
     const missingDepot = invoiceData.items.some(item => !item.depot);
@@ -202,7 +196,6 @@ const InvoiceForm = () => {
     // Itt jöhet a további feldolgozás, pl. API hívás a számla mentésére
   };
 
->>>>>>> master
   return (
     <Box sx={{ display: 'flex' }}>
       <Sidebar />
@@ -351,8 +344,6 @@ const InvoiceForm = () => {
               <TableBody>
                 {invoiceData.items.map((item, i) => (
                   <TableRow key={i}>
-<<<<<<< HEAD
-=======
                     <TableCell>
                       <Select
                         value={item.tipus || 'termek'}
@@ -365,7 +356,6 @@ const InvoiceForm = () => {
                         <MenuItem value="szolgaltatas">Szolgáltatás</MenuItem>
                       </Select>
                     </TableCell>
->>>>>>> master
                     {/* Új: Barcode mező */}
                     <TableCell>
                       <TextField
@@ -387,10 +377,7 @@ const InvoiceForm = () => {
                         size="small"
                         displayEmpty
                         fullWidth
-<<<<<<< HEAD
-=======
                         required
->>>>>>> master
                       >
                         <MenuItem value="" disabled>
                           Válassz raktárat

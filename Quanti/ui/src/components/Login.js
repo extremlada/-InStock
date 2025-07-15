@@ -22,13 +22,8 @@ function Login() {
       const data = await res.json();
       if (!res.ok) throw new Error('Hibás email vagy jelszó!');
       if (!data.access) throw new Error('Nincs access token!');
-<<<<<<< HEAD
-      localStorage.setItem('access', data.access);
-      localStorage.setItem('refresh', data.refresh);
-=======
       sessionStorage.setItem('access', data.access);
       sessionStorage.setItem('refresh', data.refresh);
->>>>>>> master
 
       const userRes = await fetch('/api/current-user/', {
         headers: { 'Authorization': `Bearer ${data.access}` }
