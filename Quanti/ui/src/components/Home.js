@@ -40,20 +40,20 @@ class Home extends Component {
         nap: {}, honap: {}, ev: {},
         nap_ido: [], honap_ido: [], ev_ido: [], het_ido: []
       },
-      showBevetel: true
+      showBevetel: true,
+      monthlyStats: [],
+      dailyStats: [],
+      weeklyStats: []
     };
     this.navigate = props.navigate;
   }
 
   componentDidMount() {
-    this.fetchStatistics();
-    this.fetchItems();
-  }
-
-  fetchStatistics() {
     fetch(`${window.location.origin}/api/statistics/`)
       .then(res => res.json())
-      .then(data => this.setState({ data }));
+      .then(monthlyStats => {
+        this.setState({ monthlyStats });
+      });
   }
 
   fetchItems() {
@@ -93,6 +93,20 @@ class Home extends Component {
     };
   }
 
+  // Chart builder for monthly
+  chartDataFinance(stats) {
+    if (!Array.isArray(stats) || stats.length === 0) return { labels: [], datasets: [] };
+    const labels = stats.map(row => row.month);
+    return {
+      labels,
+      datasets: [
+        { label: 'Bevétel', data: stats.map(row => row.net_revenue), backgroundColor: 'rgba(75,192,192,0.6)' },
+        { label: 'Kiadás', data: stats.map(row => row.net_expense), backgroundColor: 'rgba(255,99,132,0.6)' },
+        { label: 'Profit', data: stats.map(row => row.profit), backgroundColor: 'rgba(34,197,94,0.6)' }
+      ]
+    };
+  }
+
   getBackgroundColor(quantity) {
     if (quantity <= 5) return '#ffcdd2';
     if (quantity <= 10) return '#ffe0b2';
@@ -101,7 +115,7 @@ class Home extends Component {
   }
 
   render() {
-    const { items, data } = this.state;
+    const { items, data, monthlyStats, dailyStats, weeklyStats } = this.state;
     const chartOptions = {
       responsive: true,
       plugins: { legend: { position: 'top' } },
@@ -163,6 +177,20 @@ class Home extends Component {
               <CalendarWidget />
             </Grid>
           </Grid>
+
+          {/* Monthly financial statistics chart */}
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Havi pénzügyi statisztika</Typography>
+            <Bar data={this.chartDataFinance(this.state.monthlyStats)} options={chartOptions} />
+          </Paper>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Napi pénzügyi statisztika</Typography>
+            <Bar data={this.chartDataFinance(this.state.dailyStats, 'day')} options={chartOptions} />
+          </Paper>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>Heti pénzügyi statisztika</Typography>
+            <Bar data={this.chartDataFinance(this.state.weeklyStats, 'week')} options={chartOptions} />
+          </Paper>
         </Box>
       </Box>
     );

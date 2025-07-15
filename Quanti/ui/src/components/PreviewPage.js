@@ -13,17 +13,22 @@ const PreviewPage = () => {
   const handleFinalize = async () => {
     if (!invoiceData?.items) return;
     for (const item of invoiceData.items) {
+      const payload = {
+        name: item.termek_nev,
+        barcode: item.barcode,
+        Leirás: '',
+        Mennyiség: Number(item.mennyiseg), // csak a tényleges mennyiség!
+        muvelet: 'KI',
+        egysegar: Number(item.egysegar)
+      };
+      if (item.depot) payload.Depot = item.depot;
       await fetch('/api/items/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: item.termek_nev,
-          barcode: item.barcode,
-          Leirás: '', // ha kell
-          Mennyiség: Number(item.mennyiseg),
-          muvelet: 'KI',
-          Depot: item.depot, // <-- ez már az ID lesz!
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access')}`
+        },
+        body: JSON.stringify(payload),
       });
     }
     // Navigálj vissza vagy mutass sikeres üzenetet

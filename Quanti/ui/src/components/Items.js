@@ -38,12 +38,17 @@ class Item extends Component {
   // Csoportosítja az itemeket vonalkód szerint, mennyiséget összeadja
   processItems(data) {
     const groupedItems = data.reduce((acc, item) => {
+      const qty = item.Mennyiség || item.quantity || 0;
+      const price = item.egysegar || item.egysegar || 0;
+      const ar = item.item_price || (qty * price);
       if (acc[item.barcode]) {
-        acc[item.barcode].quantity += item.quantity;
+        acc[item.barcode].quantity += qty;
+        acc[item.barcode].ar += qty * price;
       } else {
         acc[item.barcode] = {
           ...item,
-          id: item.id || item.barcode // minden itemnek legyen id-ja
+          id: item.id || item.barcode,
+          ar: ar
         };
       }
       return acc;
@@ -119,11 +124,13 @@ class Item extends Component {
     const itemData = {
       name: formData.name,
       Depot: id,
-      Mennyiség: formData.mennyiség,
-      egysegar: formData.egysegar,
-      ar: formData.ar,
+      Mennyiség: formData.Mennyiség,
       barcode: formData.barcode,
-      Leirás: formData.description
+      Leirás: formData.description,
+      egysegar: formData.egysegar,
+      Leirás: formData.description || "",
+      muvelet: "BE", // Alapértelmezett művelet,
+      // NE küldj item_price-t!
     };
 
     function getCookie(name) {
@@ -468,4 +475,3 @@ class Item extends Component {
 }
 
 export default (props) => <Item {...props} params={useParams()} />;
-                           

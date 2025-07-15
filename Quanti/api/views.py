@@ -1,3 +1,5 @@
+from django.db.models import Sum, F, Case, When, DecimalField, Q
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -109,6 +111,7 @@ class AggregatedItemView(APIView):
             "Dátum": legutobbi.Date.isoformat(),
             "Depot": legutobbi.Depot.id,
             "id": legutobbi.id,
+            "egysegar": legutobbi.egysegar,
         })
 
 class RaktarViewId(APIView):
@@ -171,19 +174,40 @@ class ItemsViewId(APIView):
 
 class ItemsView(APIView):
     serializer_class = ItemsSerializer
+    def post(self, request):
+        barcode = request.data.get('barcode')
+        depot = request.data.get('Depot')
+        quantity = int(request.data.get('Mennyiség', 1))
+        muvelet = request.data.get('muvelet', 'BE')
+        user = request.user if request.user.is_authenticated else None
 
-    def post(self, request, format=None):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            item = serializer.save()
-            create_transaction_for_item(item, item.muvelet, request.user if request.user.is_authenticated else None)
-            # Return additional flag to indicate frontend should refresh statistics
-            response_data = {
-                **serializer.data,
-                'refresh_statistics': True
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        existing = items.objects.filter(barcode=barcode, Depot=depot).first()
+        if existing:
+            # Mindig frissítsd az egységárat, ha küldik!
+            if 'egysegar' in request.data and request.data.get('egysegar') not in [None, ""]:
+                try:
+                    existing.egysegar = float(request.data.get('egysegar'))
+                except Exception:
+                    pass
+            existing.Mennyiség += quantity
+            existing.item_price = existing.Mennyiség * existing.egysegar
+            existing.save()
+            # Tranzakció generálása (opcionális, ha kell)
+            create_transaction_for_item(existing, muvelet, user, quantity)
+            return Response({"detail": "Mennyiség és egységár frissítve."}, status=status.HTTP_200_OK)
+        else:
+            obj = items.objects.create(
+                name=request.data.get('name'),
+                Depot=depot,
+                Mennyiség=quantity,
+                barcode=barcode,
+                Leirás=request.data.get('Leirás', ''),
+                egysegar=request.data.get('egysegar', 0),
+                item_price=quantity * float(request.data.get('egysegar', 0)),
+                muvelet=muvelet
+            )
+            create_transaction_for_item(obj, muvelet, user, quantity)
+            return Response({"detail": "Új termék létrehozva."}, status=status.HTTP_201_CREATED)
 
     def get(self, request, format=None):
         Items = items.objects.all()
@@ -200,123 +224,37 @@ class ItemsView(APIView):
 
 @api_view(['GET'])
 def statistics_view(request):
-    from django.db.models.functions import TruncHour, TruncDay, TruncMonth
-    from django.utils import timezone
-
-    now = timezone.now()
-    today = now.date()
-    current_month = today.month
-    current_year = today.year
-
-    # Összegzések
-    daily = {
-        'bevetel': items.objects.filter(Date__date=today, muvelet='BE').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-        'kiadas': items.objects.filter(Date__date=today, muvelet='KI').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-    }
-
-    monthly = {
-        'bevetel': items.objects.filter(Date__year=current_year, Date__month=current_month, muvelet='BE').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-        'kiadas': items.objects.filter(Date__year=current_year, Date__month=current_month, muvelet='KI').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-    }
-
-    yearly = {
-        'bevetel': items.objects.filter(Date__year=current_year, muvelet='BE').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-        'kiadas': items.objects.filter(Date__year=current_year, muvelet='KI').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-    }
-
-    # Daily timeline with 30-minute intervals
-    daily_breakdown = []
-    start_of_day = timezone.make_aware(datetime.combine(today, datetime.min.time()))
-    for hour in range(24):
-        for minute in [0, 30]:
-            time_point = start_of_day + timedelta(hours=hour, minutes=minute)
-            next_time = (time_point + timedelta(minutes=30)) if not (hour == 23 and minute == 30) else start_of_day.replace(hour=23, minute=59, second=59)
-            
-            period_data = {
-                'hour': time_point.isoformat(),
-                'bevetel': items.objects.filter(
-                    Date__gte=time_point,
-                    Date__lt=next_time,
-                    muvelet='BE'
-                ).aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-                'kiadas': items.objects.filter(
-                    Date__gte=time_point,
-                    Date__lt=next_time,
-                    muvelet='KI'
-                ).aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0
-            }
-            daily_breakdown.append(period_data)
-
-    # Monthly breakdown (current month only)
-    monthly_data = (
-        items.objects.filter(Date__year=current_year, Date__month=current_month)
-        .annotate(day=TruncDay('Date'))
-        .values('day', 'muvelet')
-        .annotate(total=Sum('Mennyiség'))
-        .order_by('day')
+    # Annotate month, calculate total for each TransactionItem
+    qs = TransactionItem.objects.annotate(
+        month=TruncMonth('transaction__created_at'),
+        total=F('quantity') * F('item__egysegar'),
+        is_revenue=Case(
+            When(transaction__transaction_type__code='KI', then=1),
+            default=0,
+            output_field=DecimalField()
+        ),
+        is_expense=Case(
+            When(transaction__transaction_type__code='BE', then=1),
+            default=0,
+            output_field=DecimalField()
+        ),
     )
 
-    monthly_breakdown = []
-    for day in monthly_data:
-        date_str = day['day'].isoformat()
-        existing = next((x for x in monthly_breakdown if x['day'] == date_str), None)
-        if existing:
-            if day['muvelet'] == 'BE':
-                existing['bevetel'] = day['total'] or 0
-            else:
-                existing['kiadas'] = day['total'] or 0
-        else:
-            monthly_breakdown.append({
-                'day': date_str,
-                'bevetel': day['total'] if day['muvelet'] == 'BE' else 0,
-                'kiadas': day['total'] if day['muvelet'] == 'KI' else 0
-            })
+    monthly = qs.values('month').annotate(
+        net_revenue=Sum('total', filter=Q(is_revenue=1)),
+        net_expense=Sum('total', filter=Q(is_expense=1)),
+    ).order_by('month')
 
-    # Yearly breakdown (current year only)
-    yearly_data = (
-        items.objects.filter(Date__year=current_year)
-        .annotate(month=TruncMonth('Date'))
-        .values('month', 'muvelet')
-        .annotate(total=Sum('Mennyiség'))
-        .order_by('month')
-    )
-
-    yearly_breakdown = []
-    for month in yearly_data:
-        date_str = month['month'].isoformat()
-        existing = next((x for x in yearly_breakdown if x['month'] == date_str), None)
-        if existing:
-            if month['muvelet'] == 'BE':
-                existing['bevetel'] = month['total'] or 0
-            else:
-                existing['kiadas'] = month['total'] or 0
-        else:
-            yearly_breakdown.append({
-                'month': date_str,
-                'bevetel': month['total'] if month['muvelet'] == 'BE' else 0,
-                'kiadas': month['total'] if month['muvelet'] == 'KI' else 0
-            })
-
-    # Weekly breakdown with each day of the week
-    weekly_breakdown = []
-    for i in range(7):
-        day = today - timedelta(days=i)
-        daily_data = {
-            'day': day.isoformat(),
-            'bevetel': items.objects.filter(Date__date=day, muvelet='BE').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-            'kiadas': items.objects.filter(Date__date=day, muvelet='KI').aggregate(Sum('Mennyiség'))['Mennyiség__sum'] or 0,
-        }
-        weekly_breakdown.append(daily_data)
-
-    return Response({
-        'nap': daily,
-        'honap': monthly,
-        'ev': yearly,
-        'nap_ido': daily_breakdown,
-        'honap_ido': monthly_breakdown,
-        'ev_ido': yearly_breakdown,
-        'het_ido': weekly_breakdown,
-    })
+    result = []
+    for row in monthly:
+        profit = (row['net_revenue'] or 0) - (row['net_expense'] or 0)
+        result.append({
+            'month': row['month'].strftime('%Y-%m'),
+            'net_revenue': float(row['net_revenue'] or 0),
+            'net_expense': float(row['net_expense'] or 0),
+            'profit': float(profit)
+        })
+    return Response(result)
 
 def transaction_pdf(request, pk):
     transaction = Transaction.objects.get(pk=pk)
@@ -346,7 +284,7 @@ class TransactionListView(APIView):
         serializer = TransactionSerializer(transactions, many=True)
         return Response(serializer.data)
 
-def create_transaction_for_item(item, muvelet_tipus, user=None):
+def create_transaction_for_item(item, muvelet_tipus, user=None, mennyiseg=None):
     try:
         ttype = TransactionType.objects.get(code=muvelet_tipus)
     except TransactionType.DoesNotExist:
@@ -361,7 +299,7 @@ def create_transaction_for_item(item, muvelet_tipus, user=None):
     TransactionItem.objects.create(
         transaction=transaction,
         item=item,
-        quantity=item.Mennyiség
+        quantity=mennyiseg if mennyiseg is not None else item.Mennyiség  # <-- csak a tényleges mennyiség!
     )
     return transaction
 
@@ -389,3 +327,83 @@ class CurrentUserView(APIView):
     def get(self, request):
         serializer = UserShortSerializer(request.user)
         return Response(serializer.data)
+
+@api_view(['GET'])
+def monthly_financial_stats(request):
+    # Annotate each item with its total value (quantity * unit price)
+    qs = items.objects.annotate(
+        total_value=F('Mennyiség') * F('egysegar')
+    )
+
+    # Group by month and muvelet (BE = revenue, KI = expense)
+    monthly = (
+        qs.annotate(month=TruncMonth('Date'))
+        .values('month', 'muvelet')
+        .annotate(sum_value=Sum('total_value'))
+        .order_by('month')
+    )
+
+    # Aggregate results
+    stats = {}
+    for entry in monthly:
+        month = entry['month'].strftime('%Y-%m')
+        if month not in stats:
+            stats[month] = {'revenue': 0, 'expense': 0, 'profit': 0}
+        if entry['muvelet'] == 'BE':
+            stats[month]['revenue'] += entry['sum_value'] or 0
+        elif entry['muvelet'] == 'KI':
+            stats[month]['expense'] += entry['sum_value'] or 0
+
+    # Calculate profit for each month
+    for month, values in stats.items():
+        values['profit'] = values['revenue'] - values['expense']
+
+    return Response(stats)
+
+@api_view(['GET'])
+def financial_statistics_view(request):
+    # Annotate month, calculate total for each TransactionItem
+    qs = TransactionItem.objects.annotate(
+        month=TruncMonth('transaction__created_at'),
+        is_income=Case(
+            When(transaction__transaction_type__code='BE', then=1),
+            default=0,
+            output_field=DecimalField()
+        ),
+        is_expense=Case(
+            When(transaction__transaction_type__code='KI', then=1),
+            default=0,
+            output_field=DecimalField()
+        ),
+        total=F('quantity') * F('item__egysegar')
+    )
+
+    monthly = qs.values('month').annotate(
+        net_revenue=Sum('total', filter=Q(is_income=1)),
+        net_expense=Sum('total', filter=Q(is_expense=1)),
+    ).order_by('month')
+
+    result = []
+    for row in monthly:
+        profit = (row['net_revenue'] or 0) - (row['net_expense'] or 0)
+        result.append({
+            'month': row['month'].strftime('%Y-%m'),
+            'net_revenue': float(row['net_revenue'] or 0),
+            'net_expense': float(row['net_expense'] or 0),
+            'profit': float(profit)
+        })
+    return Response(result)
+
+@api_view(['GET'])
+def top_products_view(request):
+    top_products = (
+        TransactionItem.objects
+        .filter(transaction__transaction_type__code='KI')
+        .values('item__name')
+        .annotate(
+            total_revenue=Sum(F('quantity') * F('item__egysegar')),
+            total_quantity=Sum('quantity')
+        )
+        .order_by('-total_revenue')[:10]
+    )
+    return Response(list(top_products))
