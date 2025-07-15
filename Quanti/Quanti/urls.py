@@ -23,5 +23,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('', include('ui.urls')),  # Catch all URLs for React Router
-    path('barcode/', include('barcodereader.urls')),
 ]
