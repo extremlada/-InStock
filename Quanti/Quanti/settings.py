@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+<<<<<<< HEAD
+=======
+from datetime import timedelta
+>>>>>>> master
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -161,3 +165,12 @@ REST_FRAMEWORK = {
     ),
 }
 
+<<<<<<< HEAD
+=======
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),  # vagy akár 24 óra
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    # ...egyéb beállítások...
+}
+
+>>>>>>> master

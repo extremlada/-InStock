@@ -68,7 +68,18 @@ const InvoiceForm = () => {
 
   // Raktárak lekérése
   useEffect(() => {
+<<<<<<< HEAD
     fetch('/api/raktar/')
+=======
+    fetch('/api/raktar/'
+      , {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access')}` // vagy ahol a token van
+        }
+      }
+    )
+>>>>>>> master
       .then(res => res.json())
       .then(data => setRaktarak(data));
   }, []);
@@ -178,6 +189,20 @@ const InvoiceForm = () => {
     }));
   };
 
+<<<<<<< HEAD
+=======
+  const handleSubmit = () => {
+    // Ellenőrizzük, hogy minden tételhez ki van-e választva raktár
+    const missingDepot = invoiceData.items.some(item => !item.depot);
+    if (missingDepot) {
+      alert("Minden tételhez ki kell választani a raktárat!");
+      return;
+    }
+
+    // Itt jöhet a további feldolgozás, pl. API hívás a számla mentésére
+  };
+
+>>>>>>> master
   return (
     <Box sx={{ display: 'flex' }}>
       <Sidebar />
@@ -326,6 +351,21 @@ const InvoiceForm = () => {
               <TableBody>
                 {invoiceData.items.map((item, i) => (
                   <TableRow key={i}>
+<<<<<<< HEAD
+=======
+                    <TableCell>
+                      <Select
+                        value={item.tipus || 'termek'}
+                        onChange={e => handleItemChange(i, 'tipus', e.target.value)}
+                        variant="standard"
+                        size="small"
+                        fullWidth
+                      >
+                        <MenuItem value="termek">Termék</MenuItem>
+                        <MenuItem value="szolgaltatas">Szolgáltatás</MenuItem>
+                      </Select>
+                    </TableCell>
+>>>>>>> master
                     {/* Új: Barcode mező */}
                     <TableCell>
                       <TextField
@@ -347,6 +387,10 @@ const InvoiceForm = () => {
                         size="small"
                         displayEmpty
                         fullWidth
+<<<<<<< HEAD
+=======
+                        required
+>>>>>>> master
                       >
                         <MenuItem value="" disabled>
                           Válassz raktárat

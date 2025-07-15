@@ -13,10 +13,19 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
   const [formData, setFormData] = useState({
     name: "",
+<<<<<<< HEAD
     raktar: "", // Ez automatikusan lesz beállítva
     mennyiség: "",
     barcode: "",
     description: "",
+=======
+    Depot: "", // Backend mezőnév
+    Mennyiség: "",
+    egysegar: "",
+    ar: "",
+    barcode: "",
+    Leirás: "",
+>>>>>>> master
   });
   
   const barcodeInputRef = useRef(null);
@@ -24,13 +33,31 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
   // Raktár automatikus beállítása
   useEffect(() => {
     if (currentRaktar) {
+<<<<<<< HEAD
       setFormData(prev => ({ ...prev, raktar: currentRaktar }));
+=======
+      setFormData(prev => ({ ...prev, Depot: currentRaktar }));
+>>>>>>> master
     }
   }, [currentRaktar]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+<<<<<<< HEAD
     setFormData((prev) => ({ ...prev, [name]: value }));
+=======
+    // Ha Mennyiség vagy egysegar változik, automatikusan számoljuk az árat
+    if (name === "Mennyiség" || name === "egysegar") {
+      setFormData((prev) => {
+        const mennyiseg = name === "Mennyiség" ? value : prev.Mennyiség;
+        const egysegar = name === "egysegar" ? value : prev.egysegar;
+        const ar = mennyiseg && egysegar ? Number(mennyiseg) * Number(egysegar) : "";
+        return { ...prev, [name]: value, ar };
+      });
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+>>>>>>> master
   };
 
   const handleBarcodeScanned = (scannedBarcode) => {
@@ -62,7 +89,11 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
             autoFocus
             margin="dense"
             name="name"
+<<<<<<< HEAD
             label="Name"
+=======
+            label="Név"
+>>>>>>> master
             type="text"
             fullWidth
             value={formData.name}
@@ -71,6 +102,7 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
           />
           <TextField
             margin="dense"
+<<<<<<< HEAD
             name="mennyiség"
             label="Mennyiség"
             type="number"
@@ -79,11 +111,44 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
             onChange={handleChange}
             required
           />
+=======
+            name="Mennyiség"
+            label="Mennyiség"
+            type="number"
+            fullWidth
+            value={formData.Mennyiség}
+            onChange={handleChange}
+            required
+          />
+          <TextField
+            margin="dense"
+            name="egysegar"
+            label="Egységár"
+            type="number"
+            fullWidth
+            value={formData.egysegar}
+            onChange={handleChange}
+            required
+          />
+          <TextField
+            margin="dense"
+            name="ar"
+            label="Ár (automatikus)"
+            type="number"
+            fullWidth
+            value={formData.ar}
+            InputProps={{ readOnly: true }}
+          />
+>>>>>>> master
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <TextField
               margin="dense"
               name="barcode"
+<<<<<<< HEAD
               label="Barcode"
+=======
+              label="Vonalkód"
+>>>>>>> master
               type="text"
               fullWidth
               value={formData.barcode}
@@ -122,6 +187,7 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
           </div>
           <TextField
             margin="dense"
+<<<<<<< HEAD
             name="description"
             label="Description"
             type="text"
@@ -129,6 +195,14 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
             value={formData.description}
             onChange={handleChange}
             //required
+=======
+            name="Leirás"
+            label="Leírás"
+            type="text"
+            fullWidth
+            value={formData.Leirás}
+            onChange={handleChange}
+>>>>>>> master
           />
         </DialogContent>
         <DialogActions>

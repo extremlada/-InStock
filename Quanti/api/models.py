@@ -100,9 +100,21 @@ class items(models.Model):
     Depot = models.ForeignKey(raktar, blank=False, related_name="Tárgyak", on_delete=models.CASCADE)
     Date = models.DateTimeField(default=timezone.now, blank=True)
     muvelet = models.CharField(max_length=2, choices=MUVELET_VALASZTASOK, blank=False, default='BE')
+<<<<<<< HEAD
 
     def __str__(self):
         return f"{self.name} - {self.get_muvelet_display()}"
+=======
+    item_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f"{self.name} - {self.get_muvelet_display()}"
+    
+    def save(self, *args, **kwargs):
+        self.item_price = self.Mennyiség * self.egysegar
+        super().save(*args, **kwargs)
+>>>>>>> master
 
 class Invoice(models.Model):
     szamla_szam = models.CharField(max_length=50, unique=True)
