@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 from django.db.models import Sum, F, Case, When, DecimalField, Q
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
->>>>>>> master
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
