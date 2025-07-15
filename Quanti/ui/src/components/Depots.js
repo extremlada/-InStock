@@ -75,21 +75,6 @@ class DepotsPage extends Component {
   }
   
   handleCreateDepot() {
-<<<<<<< HEAD
-    console.log(this.state.reszleg);
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        name: this.state.name,
-        részleg: this.state.reszleg,
-      }),
-    };
-    fetch('/api/raktar/', requestOptions).then((response) => 
-      response.json()).then((data) => {console.log(data)
-      this.fetchRaktarList();
-    });
-=======
     const { name, reszleg, Description } = this.state;
     if (!name || !reszleg) {
       alert("A raktár neve és a részleg megadása kötelező.");
@@ -119,7 +104,6 @@ class DepotsPage extends Component {
       .catch((error) => {
         alert(error.message);
       });
->>>>>>> master
   }
   handleReszlegChange(e) {
     this.setState({ 
@@ -149,14 +133,9 @@ class DepotsPage extends Component {
     return (
       <Box sx={{ display: 'flex' }}>
         <Sidebar />
-<<<<<<< HEAD
-        <Box sx={{ py: 10, px: 5 }}>
-          <Grid container spacing={3} justifyContent="center"> 
-=======
         <Box sx={{ py: 10, px: 5 , width: '100%'}}>
           <Grid container spacing={3} justifyContent="center">
             <Stack spacing={3}>
->>>>>>> master
             <Grid item xs={12}>
               <Typography 
                 component='h4' 
@@ -203,13 +182,9 @@ class DepotsPage extends Component {
                   borderRadius: 3,
                   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
                   background: 'linear-gradient(145deg, #ffffff, #f8fafc)',
-<<<<<<< HEAD
-                  mb: 5
-=======
                   mb: 5,
                   width: 'fit-content',
                   justifySelf: "center"
->>>>>>> master
                 }}
               >
                 <Typography 
@@ -445,10 +420,7 @@ class DepotsPage extends Component {
                 )}
               </Grid>
             </Grid>
-<<<<<<< HEAD
-=======
             </Stack>
->>>>>>> master
           </Grid>
         </Box>
       </Box>

@@ -17,13 +17,10 @@ module.exports = {
           loader: "babel-loader",
         },
       },
-<<<<<<< HEAD
-=======
       {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
       },
->>>>>>> master
     ],
   },
   optimization: {
