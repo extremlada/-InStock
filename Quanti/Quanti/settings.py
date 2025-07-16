@@ -128,7 +128,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'ui', 'build', 'static'),  # Frontend build statikus fájlok
+    os.path.join(BASE_DIR, 'ui', 'static', 'frontend'),  # Helyes útvonal
 ]
 
 # Static file finders configuration

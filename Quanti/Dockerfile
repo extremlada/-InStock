@@ -32,10 +32,8 @@ COPY ui/ ./
 RUN npm install --legacy-peer-deps
 RUN npm run build
 
-# Visszaállás a Python munkakönyvtárba
-WORKDIR /app
-
 # Statikus fájlok gyűjtése
+WORKDIR /app
 COPY . /app/
 RUN python manage.py collectstatic --noinput
 
