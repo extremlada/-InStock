@@ -1,12 +1,14 @@
 # Alap image: Python 3.10-slim
 FROM python:3.10-slim
 
-# Node.js telepítése a Python image-re
+# Node.js és szükséges rendszerkönyvtárak telepítése
 RUN apt-get update && apt-get install -y \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get install -y build-essential libpq-dev \
+    pkg-config \
+    libmariadb-dev \
+    libpq-dev \
+    build-essential \
+    nodejs \
     && apt-get clean
 
 # Környezetváltozók beállítása
