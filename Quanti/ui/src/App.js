@@ -4,7 +4,7 @@ import DepotsPageWrapper from './components/Depots';
 import DivisionPageWrapper from './components/Division';
 import HomePageWrapper from './components/Home';
 import Items from './components/Items';
-import Login from './components/LogIn';
+import Login from './components/Login';
 import ItemSaleForm from './components/ItemSaleForm';
 import PreviewPage from './components/PreviewPage';
 import MobileQrPage from './components/MobileQrPage';
