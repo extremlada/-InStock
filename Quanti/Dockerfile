@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Frontend buildelése
 WORKDIR /app/ui
-COPY ui/package.json ui/package-lock.json ./
+COPY ui/ ./  
 RUN npm install --legacy-peer-deps
 RUN npm run build
 
