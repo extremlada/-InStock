@@ -1,6 +1,12 @@
-# Alap image: Python 3.10 és Node.js 18
-FROM python:3.10-slim AS python-base
-FROM node:18 AS node-base
+# Alap image: Python 3.10-slim
+FROM python:3.10-slim
+
+# Node.js telepítése a Python image-re
+RUN apt-get update && apt-get install -y \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean
 
 # Környezetváltozók beállítása
 ENV PYTHONDONTWRITEBYTECODE 1
