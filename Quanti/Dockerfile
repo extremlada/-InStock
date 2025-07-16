@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
+    && apt-get install -y build-essential libpq-dev \
     && apt-get clean
 
 # Környezetváltozók beállítása
@@ -14,6 +15,9 @@ ENV PYTHONUNBUFFERED 1
 
 # Munkakönyvtár létrehozása
 WORKDIR /app
+
+# Pip frissítése
+RUN pip install --upgrade pip
 
 # Python függőségek telepítése
 COPY requirements.txt /app/
