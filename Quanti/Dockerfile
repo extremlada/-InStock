@@ -1,7 +1,7 @@
-# Alap image: Python 3.10-slim
+# Alap image: Python
 FROM python:3.10-slim
 
-# Node.js és szükséges rendszerkönyvtárak telepítése
+# Node.js + build toolchain
 RUN apt-get update && apt-get install -y \
     curl \
     pkg-config \
@@ -12,33 +12,36 @@ RUN apt-get update && apt-get install -y \
     npm \
     && apt-get clean
 
-# Környezetváltozók beállítása
+# Környezet
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Munkakönyvtár létrehozása
+# Alkalmazás gyökérkönyvtára
 WORKDIR /app
 
-# Pip frissítése
+# Függőségek telepítése
+COPY requirements.txt ./
 RUN pip install --upgrade pip
-
-# Python függőségek telepítése
-COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Frontend buildelése
 WORKDIR /app/ui
-COPY ui/ ./  
+COPY ui/ ./
 RUN npm install --legacy-peer-deps
 RUN npm run build
 
-# Statikus fájlok gyűjtése
+# A build fájlokat átmásoljuk a Django által használt mappába
 WORKDIR /app
-COPY . /app/
+COPY . ./
+
+# Másoljuk át a frontend build fájlokat a Django static mappába
+RUN mkdir -p /app/static && cp -r /app/ui/build/* /app/static/
+
+# Statikus fájlok gyűjtése
 RUN python manage.py collectstatic --noinput
 
-# Port beállítása
+# Port
 EXPOSE 8000
 
-# Django alkalmazás futtatása
+# Futás Gunicorn-nal
 CMD ["gunicorn", "Quanti.wsgi:application", "--bind", "0.0.0.0:8000"]
