@@ -35,7 +35,7 @@ WORKDIR /app
 COPY . ./
 
 # Másoljuk át a frontend build fájlokat a Django static mappába
-RUN mkdir -p /app/static && cp -r /app/ui/build/* /app/static/
+RUN mkdir -p /app/static && cp -r /app/ui/static/* /app/static/
 
 # Statikus fájlok gyűjtése
 RUN python manage.py collectstatic --noinput
