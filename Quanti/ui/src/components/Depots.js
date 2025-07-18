@@ -25,6 +25,7 @@ import InventoryIcon from "@mui/icons-material/Inventory";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AddIcon from "@mui/icons-material/Add";
 import Chip from "@mui/material/Chip";
+import { selectAxisPropsNeededForCartesianGridTicksGenerator } from "recharts/types/state/selectors/axisSelectors";
 
 class DepotsPage extends Component {
   constructor(props) {
@@ -114,7 +115,7 @@ class DepotsPage extends Component {
   fetchRaktarList() {
     fetch('/api/raktar/', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access')}`
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`
       }
     })
       .then((response) => response.json())
