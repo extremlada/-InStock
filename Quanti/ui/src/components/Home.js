@@ -46,14 +46,14 @@ class Home extends Component {
 
   fetchStats() {
     fetch(`/api/statistics/`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` }
     })
       .then(res => res.json())
       .then(monthlyStats => {
         this.setState({ monthlyStats });
       });
     fetch(`/api/yearly-stats/`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` }
     })
       .then(res => res.json())
       .then(yearlyStats => {
@@ -63,7 +63,7 @@ class Home extends Component {
 
   fetchItems() {
     fetch(`/api/items/`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` }
     })
       .then(res => res.json())
       .then(items => {
@@ -73,7 +73,7 @@ class Home extends Component {
 
   fetchSales() {
     fetch(`/api/transactions/?type=KI&limit=10`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("token")}` }
     })
       .then(res => res.json())
       .then(data => {
