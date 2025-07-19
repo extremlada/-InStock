@@ -58,7 +58,12 @@ class Item extends Component {
 
   componentDidMount() {
     const { id } = this.props.params;
-    fetch(`/api/raktar/${id}`)
+    fetch(`/api/raktar/${id}`
+      , {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      })
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -81,7 +86,10 @@ class Item extends Component {
     const { selectedItem } = this.state;
     fetch(`/api/item/${selectedItem.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
       body: JSON.stringify({
         name: selectedItem.name,
         description: selectedItem.description,
@@ -96,6 +104,10 @@ class Item extends Component {
     const { selectedItem } = this.state;
     fetch(`/api/items/${selectedItem.id}/`, {
       method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
     })
       .then((response) => {
         if (response.ok) {
@@ -148,7 +160,8 @@ class Item extends Component {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRFToken": csrftoken
+        "X-CSRFToken": csrftoken,
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
       },
       body: JSON.stringify(itemData),
     })
