@@ -20,6 +20,7 @@ from django.db.models.functions import TruncWeek  # Add this import for weekly b
 
 
 class MobileSessionView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         token = str(uuid.uuid4())
         url = f"https://d526-212-40-84-22.ngrok-free.app/mobile-scan?token={token}"
@@ -27,6 +28,7 @@ class MobileSessionView(APIView):
         return Response({"token": token, "url": url})
 
 class MobileBarcodeView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         token = request.data.get("token")
         barcode = request.data.get("barcode")
@@ -37,25 +39,29 @@ class MobileBarcodeView(APIView):
 
 class ReszlegView(APIView):
     serializer_class = RészlegSerializer
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # Automatikusan hozzárendeli az aktuális felhasználót
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, format=None):
-        részleg = reszleg.objects.all()
+        user = request.user
+        részleg = reszleg.objects.filter(user=user)  # Csak a felhasználó saját részlegei
         serializer = self.serializer_class(részleg, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class Részleg_details(APIView):
     serializer_class = RészlegSerializer
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, uuid, format=None):
+        user = request.user
         try:
-            részleg = reszleg.objects.get(id=uuid)
+            részleg = reszleg.objects.get(id=uuid, user=user)
             serializer = self.serializer_class(részleg)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except reszleg.DoesNotExist:
@@ -80,8 +86,9 @@ class RaktarView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AggregatedItemView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, barcode):
-        qs = items.objects.filter(barcode=barcode)
+        qs = items.objects.filter(barcode=barcode, Depot__user=request.user)  # Csak a felhasználó saját raktáraihoz tartozó termékek
         if not qs.exists():
             return Response({"error": "Termék nem található"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -103,9 +110,10 @@ class AggregatedItemView(APIView):
         })
 
 class RaktarViewId(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, uuid, format=None):
         # Get all items for this depot
-        base_items = items.objects.filter(Depot=uuid)
+        base_items = items.objects.filter(Depot=uuid, Depot__user=request.user)  # Only items in the user's depot
         
         # Get distinct barcodes
         unique_barcodes = base_items.values('barcode').distinct()
@@ -141,8 +149,9 @@ class RaktarViewId(APIView):
 
 
 class ItemsViewId(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, uuid, format=None):
-        item = items.objects.get(id=uuid)
+        item = items.objects.get(id=uuid, Depot__user=request.user)
         serializer = ItemsSerializer(item)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -150,18 +159,19 @@ class ItemsViewId(APIView):
         item = items.objects.get(id=uuid)
         serializer = ItemsSerializer(item, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, uuid, format=None):
-        item = items.objects.get(id=uuid)
+        item = items.objects.get(id=uuid, Depot__user=request.user)
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ItemsView(APIView):
     serializer_class = ItemsSerializer
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         barcode = request.data.get('barcode')
         depot = request.data.get('Depot')
@@ -198,21 +208,22 @@ class ItemsView(APIView):
             return Response({"detail": "Új termék létrehozva."}, status=status.HTTP_201_CREATED)
 
     def get(self, request, format=None):
-        Items = items.objects.all()
+        Items = items.objects.filter(Depot__user=request.user)
         serializer = self.serializer_class(Items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, format=None):
-        Items = items.objects.all()
+        Items = items.objects.filter(Depot__user=request.user)
         serializer = self.serializer_class(Items, data=request.data, partial=True, many=True)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def statistics_view(request):
     # Annotate month, calculate total for each TransactionItem
+    permission_classes = [IsAuthenticated]
     qs = TransactionItem.objects.annotate(
         month=TruncMonth('transaction__created_at'),
         total=F('quantity') * F('item__egysegar'),
@@ -262,8 +273,9 @@ def transaction_pdf(request, pk):
     return response
 
 class TransactionListView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        transactions = Transaction.objects.all().order_by('-created_at')
+        transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
         # Szűrés GET paraméterek alapján (pl. type, user, stb.)
         ttype = request.GET.get("type")
         if ttype:
@@ -273,6 +285,7 @@ class TransactionListView(APIView):
         return Response(serializer.data)
 
 def create_transaction_for_item(item, muvelet_tipus, user=None, mennyiseg=None):
+    permission_classes = [IsAuthenticated]
     try:
         ttype = TransactionType.objects.get(code=muvelet_tipus)
     except TransactionType.DoesNotExist:
