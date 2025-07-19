@@ -3,8 +3,9 @@ from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, generics
-from .models import raktar, reszleg, items, Transaction, TransactionType, TransactionItem
+from rest_framework import status
+from django.contrib.auth import authenticate
+from .models import raktar, reszleg, items, Transaction, TransactionType, TransactionItem, Account
 from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer, TransactionSerializer, UserShortSerializer
 from django.db.models import Sum
 from datetime import datetime, timedelta
@@ -63,32 +64,19 @@ class Részleg_details(APIView):
 
 class RaktarView(APIView):
     serializer_class = RaktárSerializer
-    permission_classes = [IsAuthenticated]  # <-- EZT ADD HOZZÁ
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user
+        raktarok = raktar.objects.filter(user=user)  # Csak a felhasználó saját raktárai
+        serializer = self.serializer_class(raktarok, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # Automatikusan hozzárendeli az aktuális felhasználót
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def get(self, request, format=None):
-        user = request.user
-        if user.is_superuser:
-            raktár = raktar.objects.all()
-        else:
-            if not user.is_authenticated:
-                return Response({"error": "Nincs jogosultság!"}, status=403)
-            raktár = user.allowed_warehouses.all()
-        serializer = self.serializer_class(raktár, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def patch(self, request, format=None):
-        raktár = raktar.objects.all()
-        serializer = self.serializer_class(raktár, data=request.data, partial=True, many=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AggregatedItemView(APIView):
@@ -407,3 +395,28 @@ def top_products_view(request):
         .order_by('-total_revenue')[:10]
     )
     return Response(list(top_products))
+
+class RegisterView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        username = request.data.get('username')
+        
+        if not email or not password or not username:
+            return Response({'error': 'Email, felhasználónév és jelszó szükséges!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if Account.objects.filter(email=email).exists():
+            return Response({'error': 'Ez az email cím már regisztrálva van!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if Account.objects.filter(username=username).exists():
+            return Response({'error': 'Ez a felhasználónév már foglalt!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = Account.objects.create_user(
+                email=email,
+                username=username,
+                password=password
+            )
+            return Response({'message': 'Sikeres regisztráció!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': 'Hiba a regisztráció során!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -12,11 +12,13 @@ import MobileScanPage from './components/MobileScanPage';
 import TransactionList from './components/TransactionList';
 import RequireAuth from './components/RequireAuth';
 import ToDoBoard from './components/ToDoBoard';
+import Register from './components/Register';
 
 function App() {
   return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/*"
           element={
