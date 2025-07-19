@@ -48,7 +48,11 @@ class DepotsPage extends Component {
 
   componentDidMount() {
     // Fetch the existing reszleg from the backend
-    fetch('/api/reszleg/')
+    fetch('/api/reszleg/', {
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`
+      }
+    })
       .then((response) => response.json())
       .then((data) => this.setState({ reszlegList: data }));
 
