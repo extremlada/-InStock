@@ -23,7 +23,7 @@ export default function TransactionList() {
   }, []);
 
   const fetchTypes = async () => {
-    const token = sessionStorage.getItem("token"); // vagy ahonnan az auth token jön
+    const token = sessionStorage.getItem("access"); // vagy ahonnan az auth token jön
     const res = await axios.get("/api/transaction-types/", {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -31,7 +31,7 @@ export default function TransactionList() {
   };
 
   const fetchTransactions = async (params = {}) => {
-    const token = sessionStorage.getItem("token");
+    const token = sessionStorage.getItem("access"); // vagy ahonnan az auth token jön
     const res = await axios.get("/api/transactions/", {
       params,
       headers: { Authorization: `Bearer ${token}` }

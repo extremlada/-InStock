@@ -61,7 +61,7 @@ class Item extends Component {
     fetch(`/api/raktar/${id}`
       , {
         headers: {
-          "Authorization": `Bearer ${sessionStorage.getItem("token")}`
+          "Authorization": `Bearer ${sessionStorage.getItem("access")}`
         }
       })
       .then((response) => response.json())
@@ -88,7 +88,7 @@ class Item extends Component {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${sessionStorage.getItem("token")}`
+        "Authorization": `Bearer ${sessionStorage.getItem("access")}`
       },
       body: JSON.stringify({
         name: selectedItem.name,
@@ -106,7 +106,7 @@ class Item extends Component {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${sessionStorage.getItem("token")}`
+        "Authorization": `Bearer ${sessionStorage.getItem("access")}`
       },
     })
       .then((response) => {
@@ -161,7 +161,7 @@ class Item extends Component {
       headers: {
         "Content-Type": "application/json",
         "X-CSRFToken": csrftoken,
-        "Authorization": `Bearer ${sessionStorage.getItem("token")}`
+        "Authorization": `Bearer ${sessionStorage.getItem("access")}`
       },
       body: JSON.stringify(itemData),
     })
