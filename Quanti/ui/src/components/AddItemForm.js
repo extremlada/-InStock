@@ -62,13 +62,6 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Ellenőrizd, hogy a Depot mező kitöltött-e
-    if (!formData.Depot) {
-      alert("Kérlek válassz egy raktárat!");
-      return;
-    }
-    
     onSubmit(formData);
   };
 

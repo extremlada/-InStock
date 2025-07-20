@@ -406,7 +406,7 @@ class Item extends Component {
             open={showQuoteForm}
             onClose={this.handleQuoteFormClose}
             onSubmit={this.handleQuoteFormSubmit}
-            currentRaktar={raktarName}
+            currentRaktar={this.props.params.id} // Átadjuk az aktuális raktár ID-t
           />
 
           {/* Importálás oszlopainak párosítása modal */}
