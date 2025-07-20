@@ -60,14 +60,16 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
     setFormData(prev => ({ ...prev, barcode: "" }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = {
-      ...formData,
-      Depot: currentRaktar, // Az aktuális raktár UUID-je
-    };
-    onSubmit(payload);
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const payload = {
+    ...formData,
+    Depot: currentRaktar,
+    egysegar: parseFloat(formData.egysegar) || 0,
+    item_price: parseFloat(formData.ar) || 0,
   };
+  onSubmit(payload);
+};
 
   return (
     <Dialog open={open} onClose={onClose}>
