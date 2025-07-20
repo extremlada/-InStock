@@ -32,7 +32,6 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Ha Mennyiség vagy egysegar változik, automatikusan számoljuk az árat
     if (name === "Mennyiség" || name === "egysegar") {
       setFormData((prev) => {
         const mennyiseg = name === "Mennyiség" ? value : prev.Mennyiség;
@@ -64,8 +63,11 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
     e.preventDefault();
     const payload = {
       ...formData,
-      Depot: currentRaktar, // Az aktuális raktár UUID-je
+      Depot: currentRaktar,
+      egysegar: parseFloat(formData.egysegar) || 0,
+      item_price: parseFloat(formData.ar) || 0,
     };
+    console.log("Payload:", payload); // Debug log
     onSubmit(payload);
   };
 

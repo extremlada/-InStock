@@ -103,8 +103,8 @@ class items(models.Model):
     Depot = models.ForeignKey(raktar, blank=False, related_name="Tárgyak", on_delete=models.CASCADE)
     Date = models.DateTimeField(default=timezone.now, blank=True)
     muvelet = models.CharField(max_length=2, choices=MUVELET_VALASZTASOK, blank=False, default='BE')
-    item_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    item_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Alapértelmezett érték
+    egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Alapértelmezett érték
     user = models.ForeignKey(Account, related_name="user_items", on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
