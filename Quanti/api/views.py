@@ -339,6 +339,7 @@ class CurrentUserView(APIView):
 
 @api_view(['GET'])
 def monthly_financial_stats(request):
+    permission_classes = [IsAuthenticated]
     # Annotate each item with its total value (quantity * unit price)
     qs = items.objects.annotate(
         total_value=F('Mennyiség') * F('egysegar')
@@ -371,6 +372,7 @@ def monthly_financial_stats(request):
 
 @api_view(['GET'])
 def financial_statistics_view(request):
+    permission_classes = [IsAuthenticated]
     # Annotate month, calculate total for each TransactionItem
     qs = TransactionItem.objects.annotate(
         month=TruncMonth('transaction__created_at'),
@@ -405,6 +407,7 @@ def financial_statistics_view(request):
 
 @api_view(['GET'])
 def top_products_view(request):
+    permission_classes = [IsAuthenticated]
     top_products = (
         TransactionItem.objects
         .filter(transaction__transaction_type__code='KI')
