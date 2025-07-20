@@ -172,14 +172,21 @@ class ItemsViewId(APIView):
 class ItemsView(APIView):
     serializer_class = ItemsSerializer
     permission_classes = [IsAuthenticated]
+
     def post(self, request):
         barcode = request.data.get('barcode')
-        depot = request.data.get('Depot')
+        depot_id = request.data.get('Depot')  # UUID string érkezik
         quantity = int(request.data.get('Mennyiség', 1))
         muvelet = request.data.get('muvelet', 'BE')
         user = request.user if request.user.is_authenticated else None
 
-        existing = items.objects.filter(barcode=barcode, Depot=depot).first()
+        # Lekérjük a raktar objektumot az UUID alapján
+        try:
+            depot_obj = raktar.objects.get(id=depot_id, user=user)  # Csak a felhasználó saját raktárai
+        except raktar.DoesNotExist:
+            return Response({'error': 'A megadott raktár nem található vagy nincs jogosultság!'}, status=status.HTTP_404_NOT_FOUND)
+
+        existing = items.objects.filter(barcode=barcode, Depot=depot_obj).first()
         if existing:
             # Mindig frissítsd az egységárat, ha küldik!
             if 'egysegar' in request.data and request.data.get('egysegar') not in [None, ""]:
@@ -196,7 +203,7 @@ class ItemsView(APIView):
         else:
             obj = items.objects.create(
                 name=request.data.get('name'),
-                Depot=depot,
+                Depot=depot_obj,  # Az UUID helyett a raktar objektumot adjuk át
                 Mennyiség=quantity,
                 barcode=barcode,
                 Leirás=request.data.get('Leirás', ''),

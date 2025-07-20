@@ -62,7 +62,11 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    const payload = {
+      ...formData,
+      Depot: currentRaktar, // Az aktuális raktár UUID-je
+    };
+    onSubmit(payload);
   };
 
   return (
