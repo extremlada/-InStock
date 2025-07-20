@@ -71,7 +71,9 @@ class Account(AbstractBaseUser):
 class reszleg(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.TextField(max_length=255, blank=False)
-    
+    Description = models.TextField(max_length=400, blank=True)
+    user = models.ForeignKey(Account, related_name="user_reszlegek", on_delete=models.CASCADE, null=True, blank=True)  # Új mező
+
     def __str__(self):
         return self.name
     
@@ -81,6 +83,7 @@ class raktar(models.Model):
     name = models.TextField(max_length=255, blank=False)
     Description = models.TextField(max_length=400, blank=True)
     részleg = models.ForeignKey(reszleg, blank=False, related_name="raktarok", on_delete=models.CASCADE)
+    user = models.ForeignKey(Account, related_name="user_raktarok", on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -102,6 +105,7 @@ class items(models.Model):
     muvelet = models.CharField(max_length=2, choices=MUVELET_VALASZTASOK, blank=False, default='BE')
     item_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    user = models.ForeignKey(Account, related_name="user_items", on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - {self.get_muvelet_display()}"

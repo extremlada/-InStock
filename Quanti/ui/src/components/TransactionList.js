@@ -23,13 +23,20 @@ export default function TransactionList() {
   }, []);
 
   const fetchTypes = async () => {
-    const res = await axios.get("/api/transaction-types/"); // Készíts ilyen DRF végpontot, vagy cseréld a lekérdezést!
+    const token = sessionStorage.getItem("access"); // vagy ahonnan az auth token jön
+    const res = await axios.get("/api/transaction-types/", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     setTypes(res.data);
   };
 
   const fetchTransactions = async (params = {}) => {
-    const res = await axios.get("/api/transactions/", { params });
-    setTransactions(res.data.results || res.data); // Ha paginált, akkor .results
+    const token = sessionStorage.getItem("access"); // vagy ahonnan az auth token jön
+    const res = await axios.get("/api/transactions/", {
+      params,
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setTransactions(res.data.results || res.data);
   };
 
   const handleFilterChange = (e) => {

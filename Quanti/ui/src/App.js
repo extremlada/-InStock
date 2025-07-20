@@ -4,7 +4,7 @@ import DepotsPageWrapper from './components/Depots';
 import DivisionPageWrapper from './components/Division';
 import HomePageWrapper from './components/Home';
 import Items from './components/Items';
-import Login from './components/LogIn';
+import Login from './components/Login';
 import ItemSaleForm from './components/ItemSaleForm';
 import PreviewPage from './components/PreviewPage';
 import MobileQrPage from './components/MobileQrPage';
@@ -12,11 +12,13 @@ import MobileScanPage from './components/MobileScanPage';
 import TransactionList from './components/TransactionList';
 import RequireAuth from './components/RequireAuth';
 import ToDoBoard from './components/ToDoBoard';
+import Register from './components/Register';
 
 function App() {
   return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/*"
           element={

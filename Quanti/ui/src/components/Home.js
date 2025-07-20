@@ -45,12 +45,16 @@ class Home extends Component {
   }
 
   fetchStats() {
-    fetch(`/api/statistics/`)
+    fetch(`/api/statistics/`, {
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("access")}` }  // "token" helyett "access"
+    })
       .then(res => res.json())
       .then(monthlyStats => {
         this.setState({ monthlyStats });
       });
-    fetch(`/api/yearly-stats/`)
+    fetch(`/api/yearly-stats/`, {
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("access")}` }  // "token" helyett "access"
+    })
       .then(res => res.json())
       .then(yearlyStats => {
         this.setState({ yearlyStats });
@@ -58,7 +62,9 @@ class Home extends Component {
   }
 
   fetchItems() {
-    fetch(`/api/items/`)
+    fetch(`/api/items/`, {
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("access")}` }  // "token" helyett "access"
+    })
       .then(res => res.json())
       .then(items => {
         this.setState({ items });
@@ -66,7 +72,9 @@ class Home extends Component {
   }
 
   fetchSales() {
-    fetch(`/api/transactions/?type=KI&limit=10`)
+    fetch(`/api/transactions/?type=KI&limit=10`, {
+      headers: { Authorization: `Bearer ${sessionStorage.getItem("access")}` }  // "token" helyett "access"
+    })
       .then(res => res.json())
       .then(data => {
         this.setState({ sales: Array.isArray(data.results) ? data.results : data });

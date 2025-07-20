@@ -49,8 +49,12 @@ class TransactionSerializer(serializers.ModelSerializer):
 class ItemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = items
-        fields = ['id', 'name', 'barcode', 'Leirás', 'Mennyiség', 'Depot', 'Date', 'muvelet', 'item_price', 'egysegar']
-        read_only_fields = ['item_price']
+        fields = '__all__'
+    
+    def create(self, validated_data):
+        # Automatikusan hozzárendeli a felhasználót
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
 
 
 class RaktárSerializer(serializers.ModelSerializer):

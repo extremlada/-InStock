@@ -26,7 +26,7 @@ const PreviewPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access')}`
+          'Authorization': `Bearer ${sessionStorage.getItem('access')}`
         },
         body: JSON.stringify(payload),
       });

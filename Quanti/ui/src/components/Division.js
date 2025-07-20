@@ -38,7 +38,7 @@ class DivisionPage extends Component {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem('access')}` // <-- HOZZÁADVA
+        "Authorization": `Bearer ${sessionStorage.getItem('access')}` // <-- HOZZÁADVA
       },
       body: JSON.stringify({ name: this.state.name }),
     };
@@ -54,7 +54,7 @@ class DivisionPage extends Component {
     this.setState({ isLoading: true });
     fetch('/api/reszleg/', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access')}`
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`
       }
     })
       .then(async (response) => {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, TextField, Button, Typography, Paper } from '@mui/material';
+import { Box, TextField, Button, Typography, Paper, Link } from '@mui/material';
 import { Navigate, Outlet } from 'react-router-dom';
 
 
@@ -66,6 +66,17 @@ function Login() {
           {error && <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>}
           <Button type="submit" variant="contained" fullWidth>Belépés</Button>
         </form>
+        <Typography align="center" variant="body2">
+          Még nincs fiókod?{' '}
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => navigate('/register')}
+            sx={{ textDecoration: 'none' }}
+          >
+            Regisztráció
+          </Link>
+        </Typography>
       </Paper>
     </Box>
   );

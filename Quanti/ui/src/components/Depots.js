@@ -48,7 +48,11 @@ class DepotsPage extends Component {
 
   componentDidMount() {
     // Fetch the existing reszleg from the backend
-    fetch('/api/reszleg/')
+    fetch('/api/reszleg/', {
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`
+      }
+    })
       .then((response) => response.json())
       .then((data) => this.setState({ reszlegList: data }));
 
@@ -84,7 +88,7 @@ class DepotsPage extends Component {
       method: "POST",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access')}`
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`
       },
       body: JSON.stringify({ 
         name: name,
@@ -114,7 +118,7 @@ class DepotsPage extends Component {
   fetchRaktarList() {
     fetch('/api/raktar/', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access')}`
+        'Authorization': `Bearer ${sessionStorage.getItem('access')}`
       }
     })
       .then((response) => response.json())

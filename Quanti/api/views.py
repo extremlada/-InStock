@@ -3,8 +3,9 @@ from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, generics
-from .models import raktar, reszleg, items, Transaction, TransactionType, TransactionItem
+from rest_framework import status
+from django.contrib.auth import authenticate
+from .models import raktar, reszleg, items, Transaction, TransactionType, TransactionItem, Account
 from .serializer import RaktárSerializer, ItemsSerializer, RészlegSerializer, TransactionSerializer, UserShortSerializer
 from django.db.models import Sum
 from datetime import datetime, timedelta
@@ -19,6 +20,7 @@ from django.db.models.functions import TruncWeek  # Add this import for weekly b
 
 
 class MobileSessionView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         token = str(uuid.uuid4())
         url = f"https://d526-212-40-84-22.ngrok-free.app/mobile-scan?token={token}"
@@ -26,6 +28,7 @@ class MobileSessionView(APIView):
         return Response({"token": token, "url": url})
 
 class MobileBarcodeView(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         token = request.data.get("token")
         barcode = request.data.get("barcode")
@@ -36,25 +39,29 @@ class MobileBarcodeView(APIView):
 
 class ReszlegView(APIView):
     serializer_class = RészlegSerializer
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # Automatikusan hozzárendeli az aktuális felhasználót
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, format=None):
-        részleg = reszleg.objects.all()
+        user = request.user
+        részleg = reszleg.objects.filter(user=user)  # Csak a felhasználó saját részlegei
         serializer = self.serializer_class(részleg, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class Részleg_details(APIView):
     serializer_class = RészlegSerializer
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, uuid, format=None):
+        user = request.user
         try:
-            részleg = reszleg.objects.get(id=uuid)
+            részleg = reszleg.objects.get(id=uuid, user=user)
             serializer = self.serializer_class(részleg)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except reszleg.DoesNotExist:
@@ -63,37 +70,25 @@ class Részleg_details(APIView):
 
 class RaktarView(APIView):
     serializer_class = RaktárSerializer
-    permission_classes = [IsAuthenticated]  # <-- EZT ADD HOZZÁ
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user
+        raktarok = raktar.objects.filter(user=user)  # Csak a felhasználó saját raktárai
+        serializer = self.serializer_class(raktarok, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # Automatikusan hozzárendeli az aktuális felhasználót
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request, format=None):
-        user = request.user
-        if user.is_superuser:
-            raktár = raktar.objects.all()
-        else:
-            if not user.is_authenticated:
-                return Response({"error": "Nincs jogosultság!"}, status=403)
-            raktár = user.allowed_warehouses.all()
-        serializer = self.serializer_class(raktár, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def patch(self, request, format=None):
-        raktár = raktar.objects.all()
-        serializer = self.serializer_class(raktár, data=request.data, partial=True, many=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class AggregatedItemView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, barcode):
-        qs = items.objects.filter(barcode=barcode)
+        qs = items.objects.filter(barcode=barcode, Depot__user=request.user)  # Csak a felhasználó saját raktáraihoz tartozó termékek
         if not qs.exists():
             return Response({"error": "Termék nem található"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -115,9 +110,10 @@ class AggregatedItemView(APIView):
         })
 
 class RaktarViewId(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, uuid, format=None):
         # Get all items for this depot
-        base_items = items.objects.filter(Depot=uuid)
+        base_items = items.objects.filter(Depot=uuid, Depot__user=request.user)  # Only items in the user's depot
         
         # Get distinct barcodes
         unique_barcodes = base_items.values('barcode').distinct()
@@ -153,8 +149,9 @@ class RaktarViewId(APIView):
 
 
 class ItemsViewId(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request, uuid, format=None):
-        item = items.objects.get(id=uuid)
+        item = items.objects.get(id=uuid, Depot__user=request.user)
         serializer = ItemsSerializer(item)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -162,26 +159,34 @@ class ItemsViewId(APIView):
         item = items.objects.get(id=uuid)
         serializer = ItemsSerializer(item, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, uuid, format=None):
-        item = items.objects.get(id=uuid)
+        item = items.objects.get(id=uuid, Depot__user=request.user)
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ItemsView(APIView):
     serializer_class = ItemsSerializer
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         barcode = request.data.get('barcode')
-        depot = request.data.get('Depot')
+        depot_id = request.data.get('Depot')  # UUID string érkezik
         quantity = int(request.data.get('Mennyiség', 1))
         muvelet = request.data.get('muvelet', 'BE')
         user = request.user if request.user.is_authenticated else None
 
-        existing = items.objects.filter(barcode=barcode, Depot=depot).first()
+        # Lekérjük a raktar objektumot az UUID alapján
+        try:
+            depot_obj = raktar.objects.get(id=depot_id, user=user)  # Csak a felhasználó saját raktárai
+        except raktar.DoesNotExist:
+            return Response({'error': 'A megadott raktár nem található vagy nincs jogosultság!'}, status=status.HTTP_404_NOT_FOUND)
+
+        existing = items.objects.filter(barcode=barcode, Depot=depot_obj).first()
         if existing:
             # Mindig frissítsd az egységárat, ha küldik!
             if 'egysegar' in request.data and request.data.get('egysegar') not in [None, ""]:
@@ -198,33 +203,35 @@ class ItemsView(APIView):
         else:
             obj = items.objects.create(
                 name=request.data.get('name'),
-                Depot=depot,
+                Depot=depot_obj,  # Az UUID helyett a raktar objektumot adjuk át
                 Mennyiség=quantity,
                 barcode=barcode,
                 Leirás=request.data.get('Leirás', ''),
                 egysegar=request.data.get('egysegar', 0),
                 item_price=quantity * float(request.data.get('egysegar', 0)),
-                muvelet=muvelet
+                muvelet=muvelet,
+                user=user  # Felhasználó hozzárendelése
             )
             create_transaction_for_item(obj, muvelet, user, quantity)
             return Response({"detail": "Új termék létrehozva."}, status=status.HTTP_201_CREATED)
 
     def get(self, request, format=None):
-        Items = items.objects.all()
+        Items = items.objects.filter(Depot__user=request.user)
         serializer = self.serializer_class(Items, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, format=None):
-        Items = items.objects.all()
+        Items = items.objects.filter(Depot__user=request.user)
         serializer = self.serializer_class(Items, data=request.data, partial=True, many=True)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def statistics_view(request):
     # Annotate month, calculate total for each TransactionItem
+    permission_classes = [IsAuthenticated]
     qs = TransactionItem.objects.annotate(
         month=TruncMonth('transaction__created_at'),
         total=F('quantity') * F('item__egysegar'),
@@ -274,8 +281,9 @@ def transaction_pdf(request, pk):
     return response
 
 class TransactionListView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        transactions = Transaction.objects.all().order_by('-created_at')
+        transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
         # Szűrés GET paraméterek alapján (pl. type, user, stb.)
         ttype = request.GET.get("type")
         if ttype:
@@ -285,6 +293,7 @@ class TransactionListView(APIView):
         return Response(serializer.data)
 
 def create_transaction_for_item(item, muvelet_tipus, user=None, mennyiseg=None):
+    permission_classes = [IsAuthenticated]
     try:
         ttype = TransactionType.objects.get(code=muvelet_tipus)
     except TransactionType.DoesNotExist:
@@ -407,3 +416,28 @@ def top_products_view(request):
         .order_by('-total_revenue')[:10]
     )
     return Response(list(top_products))
+
+class RegisterView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        username = request.data.get('username')
+        
+        if not email or not password or not username:
+            return Response({'error': 'Email, felhasználónév és jelszó szükséges!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if Account.objects.filter(email=email).exists():
+            return Response({'error': 'Ez az email cím már regisztrálva van!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if Account.objects.filter(username=username).exists():
+            return Response({'error': 'Ez a felhasználónév már foglalt!'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = Account.objects.create_user(
+                email=email,
+                username=username,
+                password=password
+            )
+            return Response({'message': 'Sikeres regisztráció!'}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({'error': 'Hiba a regisztráció során!'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

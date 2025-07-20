@@ -72,7 +72,7 @@ const InvoiceForm = () => {
       , {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access')}` // vagy ahol a token van
+          'Authorization': `Bearer ${sessionStorage.getItem('access')}` // vagy ahol a token van
         }
       }
     )
@@ -152,7 +152,15 @@ const InvoiceForm = () => {
     // Ha legalább 5 karakter, próbálj lekérni adatot
     if (value && value.length >= 5) {
       try {
-        const res = await fetch(`/api/barcode/${value}`);
+        const res = await fetch(`/api/barcode/${value}`
+          , {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem('access')}`
+          },
+          method: 'GET',
+        }
+        );
         if (res.ok) {
           const data = await res.json();
           // Kitöltjük a többi mezőt
