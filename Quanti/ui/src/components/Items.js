@@ -135,12 +135,14 @@ class Item extends Component {
     const { id } = this.props.params;
     const itemData = {
       name: formData.name,
-      Depot: id,  // Ez egy UUID string, amit a backend raktar objektummá alakít
+      Depot: id,
       Mennyiség: formData.Mennyiség,
       barcode: formData.barcode,
-      Leirás: formData.Leirás || "",
+      Leirás: formData.description,
       egysegar: formData.egysegar,
-      muvelet: "BE",
+      Leirás: formData.description || "",
+      muvelet: "BE", // Alapértelmezett művelet,
+      // NE küldj item_price-t!
     };
 
     function getCookie(name) {
@@ -169,13 +171,12 @@ class Item extends Component {
           this.handleQuoteFormClose();
           this.componentDidMount();
         } else {
-          return response.json().then((errorData) => {
+          response.json().then((errorData) => {
             alert("Hiba történt a termék hozzáadása során: " + JSON.stringify(errorData));
           });
         }
       })
-      .catch((error) => {
-        console.error("Error:", error);
+      .catch(() => {
         alert("Hiba történt a termék hozzáadása során.");
       });
   }
@@ -406,7 +407,7 @@ class Item extends Component {
             open={showQuoteForm}
             onClose={this.handleQuoteFormClose}
             onSubmit={this.handleQuoteFormSubmit}
-            currentRaktar={this.props.params.id} // Átadjuk az aktuális raktár ID-t
+            currentRaktar={raktarName}
           />
 
           {/* Importálás oszlopainak párosítása modal */}
