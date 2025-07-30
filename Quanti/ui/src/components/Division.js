@@ -78,7 +78,7 @@ class DivisionPage extends Component {
   }
 
   handleCardClikcked(uuid) {
-    this.props.navigate(`/reszleg/${uuid}`);
+    this.props.navigate(`/raktar?reszleg=${uuid}`);
   }
 
   render() {
