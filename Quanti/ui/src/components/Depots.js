@@ -37,6 +37,10 @@ class DepotsPage extends Component {
       raktarList: [],
       id: 0,
       showQuoteForm: false,
+      sourceDepot: "",
+      targetDepot: "",
+      itemId: "",
+      quantity: 0,
     };
     this.handleCreateDepot = this.handleCreateDepot.bind(this);
     this.handleNameChange = this.handleNameChange.bind(this);
@@ -44,6 +48,7 @@ class DepotsPage extends Component {
     this.fetchRaktarList = this.fetchRaktarList.bind(this);
     this.handleDescriptionChange = this.handleDescriptionChange.bind(this);
     this.handleCardClikcked = this.handleCardClikcked.bind(this);
+    this.handleMoveItem = this.handleMoveItem.bind(this);
   }
 
   componentDidMount() {
@@ -116,7 +121,15 @@ class DepotsPage extends Component {
   }
 
   fetchRaktarList() {
-    fetch('/api/raktar/', {
+    const queryParams = new URLSearchParams(window.location.search);
+    const reszlegId = queryParams.get('reszleg'); // Get the reszleg ID from the URL
+
+    let url = '/api/raktar/';
+    if (reszlegId) {
+      url += `?reszleg=${reszlegId}`; // Append the reszleg filter if provided
+    }
+
+    fetch(url, {
       headers: {
         'Authorization': `Bearer ${sessionStorage.getItem('access')}`
       }
@@ -131,6 +144,41 @@ class DepotsPage extends Component {
   handleCardClikcked(uuid){
     console.log("Card clicked", uuid);
     this.props.navigate(`/raktar/${uuid}`);
+  }
+
+  handleMoveItem() {
+    const { sourceDepot, targetDepot, itemId, quantity } = this.state;
+    if (!sourceDepot || !targetDepot || !itemId || quantity <= 0) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionStorage.getItem("access")}`,
+      },
+      body: JSON.stringify({
+        source_depot: sourceDepot,
+        target_depot: targetDepot,
+        item_id: itemId,
+        quantity: quantity,
+      }),
+    };
+
+    fetch("/api/move-item/", requestOptions)
+      .then((response) => {
+        if (!response.ok) throw new Error("Error moving item.");
+        return response.json();
+      })
+      .then((data) => {
+        alert(data.message);
+        this.fetchRaktarList(); // Refresh the depot list
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
   }
 
   render() {
@@ -342,7 +390,7 @@ class DepotsPage extends Component {
                     >
                       <WarehouseIcon sx={{ fontSize: 60, color: '#cbd5e1', mb: 2 }} />
                       <Typography sx={{ color: '#64748b' }}>
-                        Még nincs létrehozott raktár
+                        Még nincs létrehozva raktár
                       </Typography>
                     </Paper>
                   </Grid>

@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import MobileSessionView, MobileBarcodeView, AggregatedItemView,ReszlegView, RaktarView, ItemsView, RaktarViewId, ItemsViewId, statistics_view, Részleg_details, transaction_pdf, TransactionListView, TransactionTypeListView, CurrentUserView, RegisterView
+from .views import MobileSessionView, MobileBarcodeView, AggregatedItemView,ReszlegView, RaktarView, ItemsView, RaktarViewId, ItemsViewId, statistics_view, Részleg_details, transaction_pdf, TransactionListView, TransactionTypeListView, CurrentUserView, RegisterView, generate_invoice_pdf
 
 
 urlpatterns = [
@@ -21,4 +21,5 @@ urlpatterns = [
     path('transaction-types/', TransactionTypeListView.as_view(), name='transaction-type-list'),
     path('current-user/', CurrentUserView.as_view(), name='current-user'),
     path('register/', RegisterView.as_view(), name='register'),
+    path('generate-invoice-pdf/', generate_invoice_pdf, name='generate-invoice-pdf'),
     ]

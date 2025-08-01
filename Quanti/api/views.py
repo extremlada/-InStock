@@ -12,12 +12,129 @@ from datetime import datetime, timedelta
 import uuid
 from django.http import HttpResponse
 from reportlab.pdfgen import canvas
-from django.views.generic import ListView
+from reportlab.lib.pagesizes import A4
 from rest_framework.permissions import IsAuthenticated
 
-from django.db.models.functions import TruncWeek  # Add this import for weekly breakdowns
+from django.db.models.functions import TruncWeek
+import json
 
-
+@api_view(['POST'])
+def generate_invoice_pdf(request):
+    """
+    Számla PDF generálás
+    """
+    permission_classes = [IsAuthenticated]
+    try:
+        invoice_data = request.data
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="szamla-{invoice_data.get("fejlec", {}).get("szamlaszam", "draft")}.pdf"'
+        
+        # PDF készítése (egyszerű verzió)
+        p = canvas.Canvas(response, pagesize=A4)
+        width, height = A4
+        
+        # Fejléc
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(50, height - 50, "SZÁMLA")
+        
+        # Alapadatok
+        p.setFont("Helvetica", 12)
+        y = height - 100
+        fejlec = invoice_data.get('fejlec', {})
+        p.drawString(50, y, f"Számla sorszám: {fejlec.get('szamlaszam', '-')}")
+        y -= 20
+        p.drawString(50, y, f"Kelt: {fejlec.get('keltDatum', '-')}")
+        y -= 20
+        p.drawString(50, y, f"Teljesítés: {fejlec.get('teljesitesDatum', '-')}")
+        
+        # Eladó adatok
+        y -= 40
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(50, y, "Eladó:")
+        p.setFont("Helvetica", 10)
+        elado = invoice_data.get('elado', {})
+        y -= 15
+        p.drawString(50, y, elado.get('nev', '-'))
+        y -= 15
+        p.drawString(50, y, f"{elado.get('irsz', '')} {elado.get('telepules', '')}")
+        y -= 15
+        p.drawString(50, y, elado.get('cim', '-'))
+        y -= 15
+        p.drawString(50, y, f"Adószám: {elado.get('adoszam', '-')}")
+        
+        # Vevő adatok
+        y -= 30
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(300, y + 45, "Vevő:")
+        p.setFont("Helvetica", 10)
+        vevo = invoice_data.get('vevo', {})
+        p.drawString(300, y + 30, vevo.get('nev', '-'))
+        p.drawString(300, y + 15, f"{vevo.get('irsz', '')} {vevo.get('telepules', '')}")
+        p.drawString(300, y, vevo.get('cim', '-'))
+        p.drawString(300, y - 15, f"Adószám: {vevo.get('adoszam', '-')}")
+        
+        # Tételek táblázat
+        y -= 60
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(50, y, "Megnevezés")
+        p.drawString(200, y, "Menny.")
+        p.drawString(250, y, "Egységár")
+        p.drawString(320, y, "ÁFA%")
+        p.drawString(370, y, "Nettó")
+        p.drawString(420, y, "ÁFA")
+        p.drawString(470, y, "Bruttó")
+        
+        y -= 20
+        p.setFont("Helvetica", 9)
+        
+        tetelek = invoice_data.get('tetelek', [])
+        total_netto = 0
+        total_afa = 0
+        total_brutto = 0
+        
+        for item in tetelek:
+            if y < 100:  # Új oldal, ha elfogy a hely
+                p.showPage()
+                y = height - 50
+                
+            p.drawString(50, y, str(item.get('megnevezes', '-'))[:25])
+            p.drawString(200, y, str(item.get('mennyiseg', 0)))
+            p.drawString(250, y, f"{item.get('nettoEgysegar', 0):.2f}")
+            p.drawString(320, y, f"{item.get('afakulcs', 0):.0f}")
+            
+            netto = float(item.get('nettoErtek', 0))
+            afa = float(item.get('afaErtek', 0))
+            brutto = float(item.get('bruttoErtek', 0))
+            
+            p.drawString(370, y, f"{netto:.2f}")
+            p.drawString(420, y, f"{afa:.2f}")
+            p.drawString(470, y, f"{brutto:.2f}")
+            
+            total_netto += netto
+            total_afa += afa
+            total_brutto += brutto
+            
+            y -= 15
+        
+        # Összesítés
+        y -= 20
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(370, y, f"Összesen:")
+        y -= 15
+        p.drawString(370, y, f"Nettó: {total_netto:.2f} Ft")
+        y -= 15
+        p.drawString(370, y, f"ÁFA: {total_afa:.2f} Ft")
+        y -= 15
+        p.drawString(370, y, f"Bruttó: {total_brutto:.2f} Ft")
+        
+        p.showPage()
+        p.save()
+        
+        return response
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
 
 class MobileSessionView(APIView):
     permission_classes = [IsAuthenticated]
@@ -74,7 +191,18 @@ class RaktarView(APIView):
 
     def get(self, request, format=None):
         user = request.user
-        raktarok = raktar.objects.filter(user=user)  # Csak a felhasználó saját raktárai
+        reszleg_id = request.query_params.get('reszleg')  # Get the reszleg parameter
+
+        if reszleg_id:
+            try:
+                # Ellenőrizd, hogy a részleg létezik és a felhasználóhoz tartozik
+                részleg = reszleg.objects.get(id=reszleg_id, user=user)
+                raktarok = raktar.objects.filter(részleg=részleg)  # Szűrés a részleg alapján
+            except reszleg.DoesNotExist:
+                return Response({'error': 'A megadott részleg nem található vagy nincs jogosultság!'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            raktarok = raktar.objects.filter(user=user)  # Csak a felhasználó saját raktárai
+
         serializer = self.serializer_class(raktarok, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -175,45 +303,65 @@ class ItemsView(APIView):
 
     def post(self, request):
         barcode = request.data.get('barcode')
-        depot_id = request.data.get('Depot')  # UUID string érkezik
+        depot_id = request.data.get('Depot')
         quantity = int(request.data.get('Mennyiség', 1))
         muvelet = request.data.get('muvelet', 'BE')
         user = request.user if request.user.is_authenticated else None
 
-        # Lekérjük a raktar objektumot az UUID alapján
         try:
-            depot_obj = raktar.objects.get(id=depot_id, user=user)  # Csak a felhasználó saját raktárai
+            depot_obj = raktar.objects.get(id=depot_id, user=user)
         except raktar.DoesNotExist:
             return Response({'error': 'A megadott raktár nem található vagy nincs jogosultság!'}, status=status.HTTP_404_NOT_FOUND)
 
         existing = items.objects.filter(barcode=barcode, Depot=depot_obj).first()
+        
+        # Kiegészítő adatok összeállítása KI művelethez
+        additional_data = None
+        if muvelet == 'KI':
+            additional_data = {
+                'megnevezes': request.data.get('name', ''),
+                'mertekegyseg': request.data.get('mertekegyseg', 'db'),
+                'afa_kulcs': float(request.data.get('afa_kulcs', 27.0)),
+                'barcode': barcode,
+            }
+    
         if existing:
-            # Mindig frissítsd az egységárat, ha küldik!
             if 'egysegar' in request.data and request.data.get('egysegar') not in [None, ""]:
                 try:
                     existing.egysegar = float(request.data.get('egysegar'))
                 except Exception:
                     pass
-            existing.Mennyiség += quantity
+        
+            if muvelet == 'KI':
+                existing.Mennyiség -= quantity
+                if existing.Mennyiség < 0:
+                    return Response({'error': 'Nincs elegendő készlet!'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                existing.Mennyiség += quantity
+            
             existing.item_price = existing.Mennyiség * existing.egysegar
             existing.save()
-            # Tranzakció generálása (opcionális, ha kell)
-            create_transaction_for_item(existing, muvelet, user, quantity)
-            return Response({"detail": "Mennyiség és egységár frissítve."}, status=status.HTTP_200_OK)
+            
+            # Tranzakció létrehozása a részletes adatokkal
+            create_transaction_for_item(existing, muvelet, user, quantity, additional_data)
+            return Response({"detail": f"Mennyiség frissítve ({muvelet})."}, status=status.HTTP_200_OK)
         else:
-            obj = items.objects.create(
-                name=request.data.get('name'),
-                Depot=depot_obj,  # Az UUID helyett a raktar objektumot adjuk át
-                Mennyiség=quantity,
-                barcode=barcode,
-                Leirás=request.data.get('Leirás', ''),
-                egysegar=request.data.get('egysegar', 0),
-                item_price=quantity * float(request.data.get('egysegar', 0)),
-                muvelet=muvelet,
-                user=user  # Felhasználó hozzárendelése
-            )
-            create_transaction_for_item(obj, muvelet, user, quantity)
-            return Response({"detail": "Új termék létrehozva."}, status=status.HTTP_201_CREATED)
+            if muvelet == 'KI':
+                return Response({'error': 'Nem lehet KI műveletet végezni nem létező terméken!'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        obj = items.objects.create(
+            name=request.data.get('name'),
+            Depot=depot_obj,
+            Mennyiség=quantity,
+            barcode=barcode,
+            Leirás=request.data.get('Leirás', ''),
+            egysegar=request.data.get('egysegar', 0),
+            item_price=quantity * float(request.data.get('egysegar', 0)),
+            muvelet=muvelet,
+            user=user
+        )
+        create_transaction_for_item(obj, muvelet, user, quantity, additional_data)
+        return Response({"detail": "Új termék létrehozva."}, status=status.HTTP_201_CREATED)
 
     def get(self, request, format=None):
         Items = items.objects.filter(Depot__user=request.user)
@@ -292,12 +440,13 @@ class TransactionListView(APIView):
         serializer = TransactionSerializer(transactions, many=True)
         return Response(serializer.data)
 
-def create_transaction_for_item(item, muvelet_tipus, user=None, mennyiseg=None):
+def create_transaction_for_item(item, muvelet_tipus, user=None, mennyiseg=None, additional_data=None):
     permission_classes = [IsAuthenticated]
     try:
         ttype = TransactionType.objects.get(code=muvelet_tipus)
     except TransactionType.DoesNotExist:
         raise ValueError(f"Nincs ilyen TransactionType: {muvelet_tipus}")
+    
     transaction = Transaction.objects.create(
         transaction_type=ttype,
         user=user,
@@ -305,11 +454,41 @@ def create_transaction_for_item(item, muvelet_tipus, user=None, mennyiseg=None):
         target_warehouse=None,
         note=f"Automatikus bizonylat {ttype.label} művelethez"
     )
-    TransactionItem.objects.create(
-        transaction=transaction,
-        item=item,
-        quantity=mennyiseg if mennyiseg is not None else item.Mennyiség  # <-- csak a tényleges mennyiség!
-    )
+    
+    # Alapértelmezett értékek
+    qty = mennyiseg if mennyiseg is not None else item.Mennyiség
+    unit_price = item.egysegar or 0
+    total_price = qty * unit_price
+    
+    # KI (eladás) esetén részletes adatok
+    transaction_item_data = {
+        'transaction': transaction,
+        'item': item,
+        'quantity': qty,
+        'egysegar': unit_price,
+        'item_price': total_price,
+    }
+    
+    # Ha KI tranzakció és van kiegészítő adat
+    if muvelet_tipus == 'KI' and additional_data:
+        # ÁFA számítások
+        netto = qty * unit_price
+        afa_kulcs = additional_data.get('afa_kulcs', 27.0)
+        afa_ertek = netto * (afa_kulcs / 100)
+        brutto = netto + afa_ertek
+        
+        transaction_item_data.update({
+            'termek_megnevezes': additional_data.get('megnevezes', item.name),
+            'mertekegyseg': additional_data.get('mertekegyseg', 'db'),
+            'afa_kulcs': afa_kulcs,
+            'netto_ertek': netto,
+            'afa_ertek': afa_ertek,
+            'brutto_ertek': brutto,
+            'barcode': additional_data.get('barcode', item.barcode),
+            'depot_name': item.Depot.name if item.Depot else '',
+        })
+    
+    TransactionItem.objects.create(**transaction_item_data)
     return transaction
 
 class RestrictedAccessView(APIView):
