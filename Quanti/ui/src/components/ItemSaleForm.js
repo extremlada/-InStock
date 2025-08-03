@@ -1,526 +1,438 @@
-// InvoiceForm.js
-import React, { useState, useEffect } from 'react';
-import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
-import InvoicePDF from './invoicePDF';
-import Sidebar from './sidebar';
-import { useLocation, useNavigate } from 'react-router-dom';
-
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Button,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-  TextareaAutosize,
-  IconButton,
+  Box, Paper, Typography, TextField, Button, Grid, Select, MenuItem,
+  FormControl, InputLabel, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, IconButton, Stepper, Step, StepLabel, Card,
+  CardContent, Divider, Alert, Chip, Tooltip
 } from '@mui/material';
-
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
+import Sidebar from './sidebar';
+import InvoicePDF from './invoicePDF';
+import InventoryIcon from '@mui/icons-material/Inventory';
 
+
+// Számlázz.hu requires specific keys. Let's define a default item structure.
 const defaultItem = {
+  megnevezes: '',
+  mennyiseg: 1,
+  mertekegyseg: 'db',
+  nettoEgysegar: 0,
+  afakulcs: 27,
+  nettoErtek: 0,
+  afaErtek: 0,
+  bruttoErtek: 0,
+  depot: '',
+  barcode: '',
+  // Legacy fields to maintain compatibility
   tipus: 'termek',
   termek_nev: '',
-  mennyiseg: 1,
   egysegar: 0,
   afa_kulcs: 27,
   afa_ertek: 0,
   netto_osszeg: 0,
   brutto_osszeg: 0,
-  depot: '', // ÚJ mező: raktár ID
 };
 
-const InvoiceForm = () => {
-  const location = useLocation();
+const steps = ['Számla Alapadatai', 'Partner Adatok', 'Tételek', 'Elkészítés'];
+
+const ItemSaleForm = () => {
   const navigate = useNavigate();
+  const [activeStep, setActiveStep] = useState(0);
+  const [raktarak, setRaktarak] = useState([]);
+  const [availableQuantities, setAvailableQuantities] = useState({});
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
+
+  // State structured for Számlázz.hu Számla Agent but maintaining compatibility
   const [invoiceData, setInvoiceData] = useState({
-    szamla_szam:  '2025-000001', // Kezdő számlaszám
-    // A számlaszám formátumát a backend fogja kezelni, itt
-    kelt: new Date().toISOString().slice(0, 10),
+    beallitasok: {
+      szamlaagentkulcs: '', // User must provide their Agent Key
+    },
+    fejlec: {
+      szamlaszam: '2025-000001',
+      keltDatum: new Date().toISOString().slice(0, 10),
+      teljesitesDatum: new Date().toISOString().slice(0, 10),
+      fizetesiHataridoDatum: '',
+      fizmod: 'Átutalás',
+      penznem: 'HUF',
+      megjegyzes: '',
+    },
     elado: {
       nev: 'Eladó Kft.',
-      cim: '1051 Budapest, Fő utca 1.',
+      irsz: '1051',
+      telepules: 'Budapest',
+      cim: 'Fő utca 1.',
       adoszam: '12345678-1-42',
     },
     vevo: {
       nev: '',
+      irsz: '',
+      telepules: '',
       cim: '',
       adoszam: '',
     },
+    tetelek: [{ ...defaultItem }],
+    // Legacy compatibility fields
+    szamla_szam: '2025-000001',
+    kelt: new Date().toISOString().slice(0, 10),
     fizetesi_mod: 'Átutalás',
     fizetesi_hatarido: '',
-    megjegyzes: '',
     items: [{ ...defaultItem }],
   });
-  const [previewVisible, setPreviewVisible] = useState(false);
-  // Új state: elérhető mennyiség minden tételhez
-  const [availableQuantities, setAvailableQuantities] = useState({});
-  const [raktarak, setRaktarak] = useState([]);
 
-  // Raktárak lekérése
+  // --- Your existing logic (unchanged as requested) ---
   useEffect(() => {
-    fetch('/api/raktar/'
-      , {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('access')}` // vagy ahol a token van
-        }
-      }
-    )
-      .then(res => res.json())
-      .then(data => setRaktarak(data));
+    fetch('/api/raktar/', {
+      headers: { 'Authorization': `Bearer ${sessionStorage.getItem('access')}` }
+    })
+    .then(res => res.json())
+    .then(data => setRaktarak(data));
   }, []);
 
-  useEffect(() => {
-    if (location.state?.invoiceData) {
-      setInvoiceData(location.state.invoiceData);
-    }
-  }, [location.state]);
-
-  const handleInputChange = (section, field, value) => {
-    setInvoiceData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
+  const handleItemBarcodeChange = async (index, value) => {
+    const newItems = [...invoiceData.tetelek];
+    newItems[index].barcode = value;
+    // Legacy compatibility
+    const legacyItems = [...invoiceData.items];
+    legacyItems[index].barcode = value;
+    
+    setInvoiceData(prev => ({ 
+      ...prev, 
+      tetelek: newItems,
+      items: legacyItems 
     }));
+
+    if (value && value.length >= 5) {
+      try {
+        const res = await fetch(`/api/barcode/${value}`, {
+          headers: { 'Authorization': `Bearer ${sessionStorage.getItem('access')}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          newItems[index].megnevezes = data.name || '';
+          newItems[index].nettoEgysegar = data.egysegar || 0;
+          // Legacy compatibility
+          legacyItems[index].termek_nev = data.name || '';
+          legacyItems[index].egysegar = data.egysegar || 0;
+          
+          setInvoiceData(prev => ({ 
+            ...prev, 
+            tetelek: newItems,
+            items: legacyItems 
+          }));
+          setAvailableQuantities(prev => ({ ...prev, [index]: data.mennyiseg || 0 }));
+          handleItemChange(index, 'nettoEgysegar', data.egysegar || 0); // Recalculate
+        }
+      } catch (e) { console.error("Barcode fetch error:", e); }
+    }
   };
 
-  const handleSimpleChange = (field, value) => {
+  const handleDepotChange = (index, value) => {
+    const newItems = [...invoiceData.tetelek];
+    newItems[index].depot = value;
+    // Legacy compatibility
+    const legacyItems = [...invoiceData.items];
+    legacyItems[index].depot = value;
+    
     setInvoiceData(prev => ({
       ...prev,
-      [field]: value,
+      tetelek: newItems,
+      items: legacyItems,
+    }));
+  };
+  // --- End of your existing logic ---
+
+  const calculateTotals = useCallback((items) => {
+    return items.map(item => {
+      const mennyiseg = parseFloat(item.mennyiseg) || 0;
+      const nettoEgysegar = parseFloat(item.nettoEgysegar) || 0;
+      const afakulcs = parseFloat(item.afakulcs) || 0;
+      const nettoErtek = mennyiseg * nettoEgysegar;
+      const afaErtek = nettoErtek * (afakulcs / 100);
+      const bruttoErtek = nettoErtek + afaErtek;
+      
+      // Legacy compatibility
+      const egysegar = nettoEgysegar;
+      const afa_kulcs = afakulcs;
+      const netto_osszeg = nettoErtek;
+      const afa_ertek = afaErtek;
+      const brutto_osszeg = bruttoErtek;
+      
+      return { 
+        ...item, 
+        nettoErtek, 
+        afaErtek, 
+        bruttoErtek,
+        // Legacy fields
+        egysegar,
+        afa_kulcs,
+        netto_osszeg,
+        afa_ertek,
+        brutto_osszeg
+      };
+    });
+  }, []);
+
+  const handleSimpleChange = (section, field, value) => {
+    setInvoiceData(p => ({ 
+      ...p, 
+      [section]: { ...p[section], [field]: value },
+      // Legacy compatibility for simple fields
+      ...(section === 'fejlec' && field === 'szamlaszam' && { szamla_szam: value }),
+      ...(section === 'fejlec' && field === 'keltDatum' && { kelt: value }),
+      ...(section === 'fejlec' && field === 'fizmod' && { fizetesi_mod: value }),
+      ...(section === 'fejlec' && field === 'fizetesiHataridoDatum' && { fizetesi_hatarido: value }),
+      ...(section === 'fejlec' && field === 'megjegyzes' && { megjegyzes: value }),
     }));
   };
 
   const handleItemChange = (index, field, value) => {
-    const newItems = [...invoiceData.items];
+    const newItems = [...invoiceData.tetelek];
     newItems[index][field] = value;
-
-    const mennyiseg = parseFloat(newItems[index].mennyiseg) || 0;
-    const egysegar = parseFloat(newItems[index].egysegar) || 0;
-    const afa_kulcs = parseFloat(newItems[index].afa_kulcs) || 0;
-
-    const netto_osszeg = mennyiseg * egysegar;
-    const afa_ertek = netto_osszeg * afa_kulcs / 100;
-    const brutto_osszeg = netto_osszeg + afa_ertek;
-
-    newItems[index].netto_osszeg = netto_osszeg;
-    newItems[index].afa_ertek = afa_ertek;
-    newItems[index].brutto_osszeg = brutto_osszeg;
-
-    setInvoiceData(prev => ({
-      ...prev,
-      items: newItems,
+    
+    // Map new fields to legacy fields
+    if (field === 'megnevezes') newItems[index].termek_nev = value;
+    if (field === 'nettoEgysegar') newItems[index].egysegar = value;
+    if (field === 'afakulcs') newItems[index].afa_kulcs = value;
+    
+    const calculatedItems = calculateTotals(newItems);
+    
+    // Legacy compatibility - update items array too
+    const legacyItems = calculatedItems.map(item => ({
+      ...item,
+      tipus: item.tipus || 'termek',
+      termek_nev: item.megnevezes || item.termek_nev,
+      mennyiseg: item.mennyiseg,
+      egysegar: item.nettoEgysegar || item.egysegar,
+      afa_kulcs: item.afakulcs || item.afa_kulcs,
+    }));
+    
+    setInvoiceData(prev => ({ 
+      ...prev, 
+      tetelek: calculatedItems,
+      items: legacyItems
     }));
   };
 
-  const addItem = () => {
-    setInvoiceData(prev => ({
-      ...prev,
-      items: [...prev.items, { ...defaultItem }],
-    }));
-  };
+  const addItem = () => setInvoiceData(p => ({ 
+    ...p, 
+    tetelek: [...p.tetelek, { ...defaultItem }],
+    items: [...p.items, { ...defaultItem }]
+  }));
+  
+  const removeItem = (index) => setInvoiceData(p => ({ 
+    ...p, 
+    tetelek: p.tetelek.filter((_, i) => i !== index),
+    items: p.items.filter((_, i) => i !== index)
+  }));
 
-  const removeItem = (index) => {
-    setInvoiceData(prev => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  };
+  const handleNext = () => setActiveStep((prev) => prev + 1);
+  const handleBack = () => setActiveStep((prev) => prev - 1);
 
-  // Új: barcode változás kezelése
-  const handleItemBarcodeChange = async (index, value) => {
-    // Frissítsd a barcode-ot
-    const newItems = [...invoiceData.items];
-    newItems[index].barcode = value;
-    setInvoiceData(prev => ({
-      ...prev,
-      items: newItems,
-    }));
+  // Updated handleSubmit function with new local transaction logic
+const handleSubmit = async () => {
+  // 1. Local transaction (KI) - Részletes adatokkal
+  try {
+    if (!invoiceData?.items) return;
+    for (const item of invoiceData.items) {
+      const payload = {
+        name: item.termek_nev || item.megnevezes,
+        barcode: item.barcode,
+        Leirás: '',
+        Mennyiség: Number(item.mennyiseg),
+        muvelet: 'KI',
+        egysegar: Number(item.egysegar || item.nettoEgysegar),
+        // Új részletes adatok
+        mertekegyseg: item.mertekegyseg || 'db',
+        afa_kulcs: Number(item.afa_kulcs || item.afakulcs || 27),
+      };
+      if (item.depot) payload.Depot = item.depot;
+      
+      const resp = await fetch('/api/items/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('access')}`
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!resp.ok) throw new Error(`Helyi tranzakció sikertelen - ${item.termek_nev || item.megnevezes}`);
+    }
+  } catch (e) {
+    alert('Helyi tranzakció hiba: ' + e.message);
+    return;
+  }
 
-    // Ha legalább 5 karakter, próbálj lekérni adatot
-    if (value && value.length >= 5) {
-      try {
-        const res = await fetch(`/api/barcode/${value}`
-          , {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('access')}`
-          },
-          method: 'GET',
-        }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          // Kitöltjük a többi mezőt
-          newItems[index].termek_nev = data.name || '';
-          newItems[index].egysegar = data.egysegar || 0;
-          // ...további mezők, ha kell...
-          setInvoiceData(prev => ({
-            ...prev,
-            items: newItems,
-          }));
-          // Elérhető mennyiség eltárolása
-          setAvailableQuantities(prev => ({
-            ...prev,
-            [index]: data.mennyiseg || 0,
-          }));
-        }
-      } catch (e) {
-        // Hibakezelés, ha kell
-      }
+  // 2. Számlázz.hu agent call (változatlan)
+    try {
+      const resp = await fetch('/api/create-szamlazzhu-invoice/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionStorage.getItem('access')}` },
+        body: JSON.stringify(invoiceData)
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Számlázz.hu hiba');
+      alert('Számla sikeresen elkészült!');
+    } catch (e) {
+      alert('Számlázz.hu hiba: ' + e.message);
     }
   };
 
-  // Raktár választó mező kezelése
-  const handleDepotChange = (index, value) => {
-    const newItems = [...invoiceData.items];
-    newItems[index].depot = value;
-    setInvoiceData(prev => ({
-      ...prev,
-      items: newItems,
-    }));
-  };
+  const getStepContent = (step) => {
+    switch (step) {
+      case 0: // Számla Alapadatai
+        return (<Card variant="outlined" sx={{ '&:hover': { transform: 'none' } }}><CardContent>
+          <Typography variant="h6" gutterBottom>Számla Alapadatai</Typography>
+          <Grid container spacing={3} mt={1}>
+            <Grid item xs={12}><TextField label="Számla Agent Kulcs" value={invoiceData.beallitasok.szamlaagentkulcs} onChange={e => handleSimpleChange('beallitasok', 'szamlaagentkulcs', e.target.value)} fullWidth required helperText="A Számlázz.hu fiókból kimásolt egyedi kulcs."/></Grid>
+            <Grid item xs={12} sm={6}><TextField label="Számla Sorszám" value={invoiceData.fejlec.szamlaszam} onChange={e => handleSimpleChange('fejlec', 'szamlaszam', e.target.value)} fullWidth helperText="Üresen hagyható, ha a Számlázz.hu generálja."/></Grid>
+            <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>Fizetési mód</InputLabel><Select label="Fizetési mód" value={invoiceData.fejlec.fizmod} onChange={e => handleSimpleChange('fejlec', 'fizmod', e.target.value)}><MenuItem value="Átutalás">Átutalás</MenuItem><MenuItem value="Készpénz">Készpénz</MenuItem><MenuItem value="Bankkártya">Bankkártya</MenuItem></Select></FormControl></Grid>
+            <Grid item xs={12} sm={6}><TextField label="Kelt" type="date" value={invoiceData.fejlec.keltDatum} onChange={e => handleSimpleChange('fejlec', 'keltDatum', e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
+            <Grid item xs={12} sm={6}><TextField label="Teljesítés" type="date" value={invoiceData.fejlec.teljesitesDatum} onChange={e => handleSimpleChange('fejlec', 'teljesitesDatum', e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
+            <Grid item xs={12} sm={6}><TextField label="Fizetési határidő" type="date" value={invoiceData.fejlec.fizetesiHataridoDatum} onChange={e => handleSimpleChange('fejlec', 'fizetesiHataridoDatum', e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
+          </Grid>
+        </CardContent></Card>);
+      case 1: // Partner Adatok
+        return (<Grid container spacing={4}>
+          <Grid item xs={12} md={6}><Card variant="outlined" sx={{ '&:hover': { transform: 'none' } }}><CardContent><Typography variant="h6" gutterBottom>Eladó adatai</Typography><TextField label="Név" value={invoiceData.elado.nev} onChange={e => handleSimpleChange('elado', 'nev', e.target.value)} fullWidth margin="normal" /><Grid container spacing={2}><Grid item xs={4}><TextField label="Irányítószám" value={invoiceData.elado.irsz} onChange={e => handleSimpleChange('elado', 'irsz', e.target.value)} fullWidth /></Grid><Grid item xs={8}><TextField label="Település" value={invoiceData.elado.telepules} onChange={e => handleSimpleChange('elado', 'telepules', e.target.value)} fullWidth /></Grid></Grid><TextField label="Cím (utca, házszám)" value={invoiceData.elado.cim} onChange={e => handleSimpleChange('elado', 'cim', e.target.value)} fullWidth margin="normal" /><TextField label="Adószám" value={invoiceData.elado.adoszam} onChange={e => handleSimpleChange('elado', 'adoszam', e.target.value)} fullWidth margin="normal" /></CardContent></Card></Grid>
+          <Grid item xs={12} md={6}><Card variant="outlined" sx={{ '&:hover': { transform: 'none' } }}><CardContent><Typography variant="h6" gutterBottom>Vevő adatai</Typography><TextField label="Név" value={invoiceData.vevo.nev} onChange={e => handleSimpleChange('vevo', 'nev', e.target.value)} fullWidth margin="normal" /><Grid container spacing={2}><Grid item xs={4}><TextField label="Irányítószám" value={invoiceData.vevo.irsz} onChange={e => handleSimpleChange('vevo', 'irsz', e.target.value)} fullWidth /></Grid><Grid item xs={8}><TextField label="Település" value={invoiceData.vevo.telepules} onChange={e => handleSimpleChange('vevo', 'telepules', e.target.value)} fullWidth /></Grid></Grid><TextField label="Cím (utca, házszám)" value={invoiceData.vevo.cim} onChange={e => handleSimpleChange('vevo', 'cim', e.target.value)} fullWidth margin="normal" /><TextField label="Adószám" value={invoiceData.vevo.adoszam} onChange={e => handleSimpleChange('vevo', 'adoszam', e.target.value)} fullWidth margin="normal" /></CardContent></Card></Grid>
+        </Grid>);
+      case 2: // Tételek
+        return (<Card variant="outlined" sx={{ '&:hover': { transform: 'none' } }}><CardContent>
+          <Typography variant="h6" gutterBottom>Számla Tételek</Typography>
+          <TableContainer><Table size="small"><TableHead><TableRow>
+            <TableCell>Vonalkód</TableCell><TableCell>Megnevezés</TableCell><TableCell>Raktár</TableCell><TableCell align="right">Mennyiség</TableCell><TableCell>Raktár mennyiség</TableCell><TableCell align="right">Mérték egység</TableCell><TableCell align="right">Nettó Egységár</TableCell><TableCell align="right">ÁFA%</TableCell><TableCell align="right">Bruttó Érték</TableCell><TableCell></TableCell>
+          </TableRow></TableHead><TableBody>
+            {invoiceData.tetelek.map((item, i) => (<TableRow key={i}>
+              <TableCell sx={{width: 150}}><TextField value={item.barcode} onChange={e => handleItemBarcodeChange(i, e.target.value)} variant="standard" size="small" fullWidth/></TableCell>
+              <TableCell><TextField value={item.megnevezes} onChange={e => handleItemChange(i, 'megnevezes', e.target.value)} variant="standard" size="small" fullWidth/></TableCell>
+              <TableCell sx={{width: 150}}><Select value={item.depot} onChange={e => handleItemChange(i, 'depot', e.target.value)} variant="standard" size="small" fullWidth displayEmpty><MenuItem value="" disabled>Válassz</MenuItem>{raktarak.map(r => (<MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>))}</Select></TableCell>
+              <TableCell align="right" sx={{width: 80}}>
+                <TextField 
+                  type="number" 
+                  value={item.mennyiseg} 
+                  onChange={e => handleItemChange(i, 'mennyiseg', e.target.value)} 
+                  variant="standard" size="small" 
+                  fullWidth inputProps={{style: {textAlign: 'right'}}} 
+                  error={availableQuantities[i] !== undefined && Number(item.mennyiseg) > availableQuantities[i]} 
+                  helperText={availableQuantities[i] !== undefined && Number(item.mennyiseg) > availableQuantities[i] ? `Max: ${availableQuantities[i]}` : ''}/>
+              </TableCell>
+              {/* Készlet állapot */}
+              <TableCell sx={{ width: 80 }}>
+                <Tooltip
+                  title={
+                    item.mennyiseg > item.available_stock
+                      ? `Maximális mennyiség: ${item.available_stock} ${item.unit_name || 'db'}`
+                      : ''
+                  }
+                  arrow
+                  disableHoverListener={!(item.mennyiseg > item.available_stock)}
+                >
+                  <Chip
+                    label={`${item.available_stock || 0} ${item.unit_name || 'db'}`}
+                    size="small"
+                    color={item.mennyiseg > item.available_stock ? 'error' : (item.available_stock > 0 ? 'success' : 'default')}
+                    icon={<InventoryIcon />}
+                  />
+                </Tooltip>
+                
+                {item.mennyiseg > item.available_stock && (
+                  <Typography variant="caption" color="error">
+                    Max: {item.available_stock} {item.unit_name || 'db'}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell sx={{width: 80}}>
+                <TextField 
+                  value={item.mertekegyseg} 
+                  onChange={e => handleItemChange(i, 'mertekegyseg', e.target.value)} 
+                  variant="standard" size="small" fullWidth/>
+              </TableCell>
+              <TableCell align="right" sx={{width: 120}}><TextField type="number" value={item.nettoEgysegar} onChange={e => handleItemChange(i, 'nettoEgysegar', e.target.value)} variant="standard" size="small" fullWidth inputProps={{style: {textAlign: 'right'}}}/></TableCell>
+              <TableCell align="right" sx={{width: 100}}><Select value={item.afakulcs} onChange={e => handleItemChange(i, 'afakulcs', e.target.value)} variant="standard" size="small"><MenuItem value={0}>0</MenuItem><MenuItem value={5}>5</MenuItem><MenuItem value={18}>18</MenuItem><MenuItem value={27}>27</MenuItem><MenuItem value="TAM">TAM</MenuItem></Select></TableCell>
+              <TableCell align="right">{item.bruttoErtek.toFixed(2)}</TableCell>
+              <TableCell align="center"><IconButton onClick={() => removeItem(i)} size="small" color="error"><DeleteIcon fontSize="inherit" /></IconButton></TableCell>
+            </TableRow>))}
+          </TableBody></Table></TableContainer>
+          <Button variant="text" onClick={addItem} startIcon={<AddIcon />} sx={{ mt: 2 }}>Új tétel</Button>
+        </CardContent></Card>);
+        
+      case 3: // Elkészítés
+        return (<Card variant="outlined" sx={{ '&:hover': { transform: 'none' } }}><CardContent>
+            <Typography variant="h5" gutterBottom>Számla Elkészítése</Typography>
+            <Alert severity="info" sx={{mb: 2}}>A számla a Számlázz.hu rendszerében jön létre. A művelet nem vonható vissza. Kérjük, ellenőrizze az adatokat!</Alert>
+            
+            {/* PDF Preview és letöltés gombok */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+              <Button 
+                variant="outlined" 
+                startIcon={<VisibilityIcon />}
+                onClick={() => setShowPDFPreview(!showPDFPreview)}
+              >
+                {showPDFPreview ? 'Előnézet elrejtése' : 'PDF Előnézet'}
+              </Button>
+              
+              <PDFDownloadLink 
+                document={<InvoicePDF invoiceData={invoiceData} />} 
+                fileName={`szamla-${invoiceData.fejlec.szamlaszam || 'draft'}.pdf`}
+                style={{ textDecoration: 'none' }}
+              >
+                {({ blob, url, loading, error }) => (
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<PictureAsPdfIcon />}
+                    disabled={loading}
+                  >
+                    {loading ? 'PDF készítése...' : 'PDF Letöltés'}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+              
+              <Button variant="contained" color="primary" onClick={handleSubmit}>
+                Számla kiállítása és küldése
+              </Button>
+            </Box>
 
-  const handleSubmit = () => {
-    // Ellenőrizzük, hogy minden tételhez ki van-e választva raktár
-    const missingDepot = invoiceData.items.some(item => !item.depot);
-    if (missingDepot) {
-      alert("Minden tételhez ki kell választani a raktárat!");
-      return;
+            {/* PDF Preview ablak */}
+            {showPDFPreview && (
+              <Paper sx={{ p: 2, mb: 3, border: '1px solid #ccc' }}>
+                <Typography variant="h6" gutterBottom>Számla előnézet</Typography>
+                <Box sx={{ height: 600, border: '1px solid #ddd' }}>
+                  <PDFViewer width="100%" height="100%">
+                    <InvoicePDF invoiceData={invoiceData} />
+                  </PDFViewer>
+                </Box>
+              </Paper>
+            )}
+            
+        </CardContent></Card>);
+      default: return 'Ismeretlen lépés';
     }
-
-    // Itt jöhet a további feldolgozás, pl. API hívás a számla mentésére
   };
 
   return (
     <Box sx={{ display: 'flex' }}>
       <Sidebar />
-      <Box sx={{ padding: 3, maxWidth: 900, margin: 'auto', flexGrow: 1 }}>
-        <Typography variant="h4" gutterBottom>
-          Számla kitöltése
-        </Typography>
-
-        {/* Számla alap adatok */}
-        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Számla adatok
-          </Typography>
-
-          <TextField
-            label="Számla sorszám"
-            value={invoiceData.szamla_szam}
-            onChange={e => handleSimpleChange('szamla_szam', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-
-          <TextField
-            label="Kelt"
-            type="date"
-            value={invoiceData.kelt}
-            onChange={e => handleSimpleChange('kelt', e.target.value)}
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="fizetesi-mod-label">Fizetési mód</InputLabel>
-            <Select
-              labelId="fizetesi-mod-label"
-              value={invoiceData.fizetesi_mod}
-              label="Fizetési mód"
-              onChange={e => handleSimpleChange('fizetesi_mod', e.target.value)}
-            >
-              <MenuItem value="Átutalás">Átutalás</MenuItem>
-              <MenuItem value="Készpénz">Készpénz</MenuItem>
-              <MenuItem value="Bankkártya">Bankkártya</MenuItem>
-              <MenuItem value="Előre fizetés">Előre fizetés</MenuItem>
-            </Select>
-          </FormControl>
-
-          <TextField
-            label="Fizetési határidő"
-            type="date"
-            value={invoiceData.fizetesi_hatarido}
-            onChange={e => handleSimpleChange('fizetesi_hatarido', e.target.value)}
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-          />
-
-          <FormControl fullWidth margin="normal">
-            <TextareaAutosize
-              minRows={3}
-              placeholder="Megjegyzés"
-              style={{ width: '100%', fontSize: 16, padding: 8, borderRadius: 4, borderColor: '#c4c4c4', fontFamily: 'Roboto, sans-serif' }}
-              value={invoiceData.megjegyzes}
-              onChange={e => handleSimpleChange('megjegyzes', e.target.value)}
-            />
-          </FormControl>
-        </Paper>
-
-        {/* Eladó adatok */}
-        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Eladó adatai
-          </Typography>
-          <TextField
-            label="Név"
-            value={invoiceData.elado.nev}
-            onChange={e => handleInputChange('elado', 'nev', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Cím"
-            value={invoiceData.elado.cim}
-            onChange={e => handleInputChange('elado', 'cim', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Adószám"
-            value={invoiceData.elado.adoszam}
-            onChange={e => handleInputChange('elado', 'adoszam', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-        </Paper>
-
-        {/* Vevő adatok */}
-        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Vevő adatai
-          </Typography>
-          <TextField
-            label="Név"
-            value={invoiceData.vevo.nev}
-            onChange={e => handleInputChange('vevo', 'nev', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Cím"
-            value={invoiceData.vevo.cim}
-            onChange={e => handleInputChange('vevo', 'cim', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            label="Adószám"
-            value={invoiceData.vevo.adoszam}
-            onChange={e => handleInputChange('vevo', 'adoszam', e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-        </Paper>
-
-        {/* Termékek / Szolgáltatások */}
-        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Termékek / szolgáltatások
-          </Typography>
-          <TableContainer>
-            <Table size="small" aria-label="invoice items">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Típus</TableCell>
-                  <TableCell>Raktár</TableCell> {/* ÚJ oszlop */}
-                  <TableCell>Megnevezés</TableCell>
-                  <TableCell align="right">Mennyiség</TableCell>
-                  <TableCell align="right">Egységár (nettó)</TableCell>
-                  <TableCell align="right">ÁFA kulcs (%)</TableCell>
-                  <TableCell align="right">ÁFA érték</TableCell>
-                  <TableCell align="right">Nettó összeg</TableCell>
-                  <TableCell align="right">Bruttó összeg</TableCell>
-                  <TableCell align="center">Művelet</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {invoiceData.items.map((item, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Select
-                        value={item.tipus || 'termek'}
-                        onChange={e => handleItemChange(i, 'tipus', e.target.value)}
-                        variant="standard"
-                        size="small"
-                        fullWidth
-                      >
-                        <MenuItem value="termek">Termék</MenuItem>
-                        <MenuItem value="szolgaltatas">Szolgáltatás</MenuItem>
-                      </Select>
-                    </TableCell>
-                    {/* Új: Barcode mező */}
-                    <TableCell>
-                      <TextField
-                        value={item.barcode || ''}
-                        onChange={e => handleItemBarcodeChange(i, e.target.value)}
-                        variant="standard"
-                        size="small"
-                        label="Vonalkód"
-                        inputProps={{ maxLength: 32 }}
-                        InputProps={{ style: { fontSize: 14, width: 200 } }} // hosszabb mező
-                        fullWidth
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={item.depot || ''}
-                        onChange={e => handleDepotChange(i, e.target.value)}
-                        variant="standard"
-                        size="small"
-                        displayEmpty
-                        fullWidth
-                        required
-                      >
-                        <MenuItem value="" disabled>
-                          Válassz raktárat
-                        </MenuItem>
-                        {raktarak.map(raktar => (
-                          <MenuItem key={raktar.id} value={raktar.id}>
-                            {raktar.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </TableCell>
-                    {/* Név mező (kitöltődik automatikusan) */}
-                    <TableCell>
-                      <TextField
-                        value={item.termek_nev}
-                        onChange={e => handleItemChange(i, 'termek_nev', e.target.value)}
-                        variant="standard"
-                        fullWidth
-                        size="small"
-                        label="Megnevezés"
-                      />
-                    </TableCell>
-                    {/* Mennyiség mező, max értékkel */}
-                    <TableCell align="right">
-                      <TextField
-                        type="number"
-                        inputProps={{
-                          min: 1,
-                          max: availableQuantities[i] || undefined
-                        }}
-                        value={item.mennyiseg}
-                        onChange={e => handleItemChange(i, 'mennyiseg', e.target.value)}
-                        variant="standard"
-                        size="small"
-                        label="Mennyiség"
-                        error={
-                          availableQuantities[i] !== undefined &&
-                          Number(item.mennyiseg) > availableQuantities[i]
-                        }
-                        helperText={
-                          availableQuantities[i] !== undefined &&
-                          Number(item.mennyiseg) > availableQuantities[i]
-                            ? `Max: ${availableQuantities[i]}`
-                            : availableQuantities[i] !== undefined
-                            ? `Max: ${availableQuantities[i]}`
-                            : ''
-                        }
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <TextField
-                        type="number"
-                        inputProps={{ min: 0, step: 'any' }}
-                        value={item.egysegar}
-                        onChange={e => handleItemChange(i, 'egysegar', e.target.value)}
-                        variant="standard"
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Select
-                        value={item.afa_kulcs}
-                        onChange={e => handleItemChange(i, 'afa_kulcs', e.target.value)}
-                        variant="standard"
-                        size="small"
-                      >
-                        <MenuItem value={0}>0</MenuItem>
-                        <MenuItem value={5}>5</MenuItem>
-                        <MenuItem value={18}>18</MenuItem>
-                        <MenuItem value={27}>27</MenuItem>
-                      </Select>
-                    </TableCell>
-                    <TableCell align="right">{item.afa_ertek.toFixed(2)}</TableCell>
-                    <TableCell align="right">{item.netto_osszeg.toFixed(2)}</TableCell>
-                    <TableCell align="right">{item.brutto_osszeg.toFixed(2)}</TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        onClick={() => removeItem(i)}
-                        size="small"
-                        color="error"
-                        aria-label="Tétel törlése"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Box mt={2}>
-            <Button variant="outlined" onClick={addItem}>
-              Tétel hozzáadása
+      <Box component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: '#f4f6f8' }}>
+        <Paper sx={{ p: { xs: 2, md: 4 }, borderRadius: 2 }}>
+          <Typography variant="h4" gutterBottom sx={{ mb: 4, fontWeight: 'bold' }}>Számla Kiállítása</Typography>
+          <Stepper activeStep={activeStep} sx={{ mb: 5 }}>{steps.map(l => (<Step key={l}><StepLabel>{l}</StepLabel></Step>))}</Stepper>
+          {getStepContent(activeStep)}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+            <Button disabled={activeStep === 0} onClick={handleBack}>Vissza</Button>
+            <Button variant="contained" onClick={handleNext}>
+              {activeStep === steps.length - 1 ? 'Befejezés' : 'Tovább'}
             </Button>
           </Box>
         </Paper>
-
-         {/* PDF letöltés és előnézet gomb */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <PDFDownloadLink
-            document={<InvoicePDF invoiceData={invoiceData} />}
-            fileName={`mindegy.pdf`}
-            style={{ textDecoration: 'none' }}
-          >
-            {({ loading }) =>
-              loading ? (
-                'PDF generálása...'
-              ) : (
-                <Button variant="contained" color="primary">
-                  Számla letöltése PDF-ben
-                </Button>
-              )
-            }
-          </PDFDownloadLink>
-
-          <Button
-            variant="outlined"
-            onClick={() => navigate('/elonezet', { state: { invoiceData } })}
-            sx={{ ml: 2 }}
-          >
-            Előnézet
-          </Button>
-        </Box>
-
-        {/* Csak akkor rendereljük az előnézetet, ha previewVisible true */}
-        {previewVisible && (
-          <Box sx={{ width: '100%', height: 600, border: '1px solid #ddd', mt: 2 }}>
-            <PDFViewer width="100%" height="100%">
-              <InvoicePDF invoiceData={invoiceData} />
-            </PDFViewer>
-          </Box>
-        )}
       </Box>
     </Box>
   );
 };
 
-export default InvoiceForm;
+export default ItemSaleForm;

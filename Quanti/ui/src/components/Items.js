@@ -10,7 +10,7 @@ import MenuItem from "@mui/material/MenuItem";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import QuoteForm from "./AddItemForm";
 import Sidebar from "./sidebar";
-import { Box, Paper, Modal, FormControl, InputLabel, Select } from "@mui/material";
+import { Box, Paper, Modal, FormControl, InputLabel, Select, TextField, Stack } from "@mui/material";
 import * as XLSX from "xlsx";
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -27,7 +27,12 @@ class Item extends Component {
       importPreview: null, // ideiglenes tároló a beolvasott adatoknak
       importColumns: [],   // oszlopnevek a fájlból
       columnMapping: {},   // felhasználó által választott párosítás
-      showImportModal: false
+      showImportModal: false,
+      raktarList: [],
+      sourceDepot: "",
+      targetDepot: "",
+      itemId: "",
+      quantity: 1,
     };
     this.handleMenuOpen = this.handleMenuOpen.bind(this);
     this.handleMenuClose = this.handleMenuClose.bind(this);
@@ -72,6 +77,19 @@ class Item extends Component {
         }
       })
       .catch((error) => console.error("Error fetching data:", error));
+
+    // Raktárak listájának betöltése
+    fetch('/api/raktar/', {
+    headers: {
+      'Authorization': `Bearer ${sessionStorage.getItem('access')}`
+    }
+    })
+    .then((response) => response.json())
+    .then((data) => {
+      this.setState({ raktarList: data });
+    })
+    .catch((error) => console.error("Error fetching raktarList:", error));
+
   }
 
   handleMenuOpen(event, item) {
@@ -220,6 +238,41 @@ class Item extends Component {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Termékek");
     XLSX.writeFile(workbook, "raktar_termekek.xlsx");
   };
+
+  handleMoveItem() {
+    const { sourceDepot, targetDepot, itemId, quantity } = this.state;
+    if (!sourceDepot || !targetDepot || !itemId || quantity <= 0) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${sessionStorage.getItem("access")}`,
+      },
+      body: JSON.stringify({
+        source_depot: sourceDepot,
+        target_depot: targetDepot,
+        item_id: itemId,
+        quantity: quantity,
+      }),
+    };
+
+    fetch("/api/move-item/", requestOptions)
+      .then((response) => {
+        if (!response.ok) throw new Error("Error moving item.");
+        return response.json();
+      })
+      .then((data) => {
+        alert(data.message);
+        this.componentDidMount(); // Refresh the item list
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
+  }
 
   render() {
     const { anchorEl, items, showQuoteForm, raktarName, showImportModal, importColumns, columnMapping, importPreview } = this.state;
@@ -481,6 +534,66 @@ class Item extends Component {
               </Box>
             </Modal>
           )}
+
+          {/* Move Items Between Depots */}
+          <Paper elevation={3} sx={{ p: 4, mb: 5 }}>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              Move Items Between Depots
+            </Typography>
+            <Stack spacing={2}>
+              <FormControl fullWidth>
+                <InputLabel>Source Depot</InputLabel>
+                <Select
+                  value={this.state.sourceDepot}
+                  onChange={(e) => this.setState({ sourceDepot: e.target.value })}
+                >
+                  {this.state.raktarList.map((depot) => (
+                    <MenuItem key={depot.id} value={depot.id}>
+                      {depot.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Target Depot</InputLabel>
+                <Select
+                  value={this.state.targetDepot}
+                  onChange={(e) => this.setState({ targetDepot: e.target.value })}
+                >
+                  {this.state.raktarList.map((depot) => (
+                    <MenuItem key={depot.id} value={depot.id}>
+                      {depot.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Item</InputLabel>
+                <Select
+                  value={this.state.itemId}
+                  onChange={(e) => this.setState({ itemId: e.target.value })}
+                >
+                  {Array.isArray(this.state.raktarList) &&
+                    this.state.raktarList.flatMap((depot) =>
+                      Array.isArray(depot.items) ? depot.items.map((item) => (
+                        <MenuItem key={item.id} value={item.id}>
+                          {item.name} ({item.barcode})
+                        </MenuItem>
+                      )) : []
+                    )}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Quantity"
+                type="number"
+                value={this.state.quantity}
+                onChange={(e) => this.setState({ quantity: e.target.value })}
+              />
+              <Button variant="contained" onClick={() => this.handleMoveItem()}>
+                Move Item
+              </Button>
+            </Stack>
+          </Paper>
         </Box>
       </Box>
     );

@@ -32,7 +32,6 @@ const QuoteForm = ({ open, onClose, onSubmit, currentRaktar }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Ha Mennyiség vagy egysegar változik, automatikusan számoljuk az árat
     if (name === "Mennyiség" || name === "egysegar") {
       setFormData((prev) => {
         const mennyiseg = name === "Mennyiség" ? value : prev.Mennyiség;

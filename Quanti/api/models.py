@@ -103,8 +103,8 @@ class items(models.Model):
     Depot = models.ForeignKey(raktar, blank=False, related_name="Tárgyak", on_delete=models.CASCADE)
     Date = models.DateTimeField(default=timezone.now, blank=True)
     muvelet = models.CharField(max_length=2, choices=MUVELET_VALASZTASOK, blank=False, default='BE')
-    item_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    item_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Alapértelmezett érték
+    egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)  # Alapértelmezett érték
     user = models.ForeignKey(Account, related_name="user_items", on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
@@ -167,3 +167,18 @@ class TransactionItem(models.Model):
     transaction = models.ForeignKey(Transaction, related_name="items", on_delete=models.CASCADE)
     item = models.ForeignKey('items', on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    egysegar = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    item_price = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    
+    # ÚJ MEZŐK ELADÁSHOZ (KI tranzakciókhoz)
+    termek_megnevezes = models.CharField(max_length=255, blank=True, null=True)  # Termék teljes neve
+    mertekegyseg = models.CharField(max_length=50, default='db')  # Mértékegység
+    afa_kulcs = models.DecimalField(max_digits=5, decimal_places=2, default=27.00)  # ÁFA kulcs %
+    netto_ertek = models.DecimalField(max_digits=14, decimal_places=2, default=0)  # Nettó érték
+    afa_ertek = models.DecimalField(max_digits=14, decimal_places=2, default=0)  # ÁFA érték
+    brutto_ertek = models.DecimalField(max_digits=14, decimal_places=2, default=0)  # Bruttó érték
+    barcode = models.CharField(max_length=50, blank=True, null=True)  # Vonalkód
+    depot_name = models.CharField(max_length=255, blank=True, null=True)  # Raktár neve
+
+    def __str__(self):
+        return f"{self.item.name} - {self.quantity} db"
