@@ -5,9 +5,14 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
-if not SECRET_KEY:
-    raise Exception("SECRET_KEY is not set in environment!")
+
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'fallback-insecure-key-for-build-only')
+
+if not SECRET_KEY or SECRET_KEY == 'fallback-insecure-key-for-build-only':
+    # Ne engedjük production-ban fallback-el
+    if os.environ.get('RENDER') == 'true':
+        raise Exception("SECRET_KEY is not set in environment!")
+        
 DEBUG = False
 ALLOWED_HOSTS = ['quanti.hu', 'www.quanti.hu']
 AUTH_USER_MODEL = 'api.Account'
