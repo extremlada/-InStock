@@ -25,3 +25,4 @@ gunicorn
 whitenoise
 requests
 psycopg2-binary>=2.9
+dj_database_url
