@@ -39,7 +39,11 @@ ROOT_URLCONF = 'Quanti.urls'
 WSGI_APPLICATION = 'Quanti.wsgi.application'
 
 DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+    'default': dj_database_url.config(
+        # Replace this value with your local database's connection string.
+        default='postgresql://quanti_user:8PCVimFMgbPuilHnd5uI7x32nAZmjfyb@dpg-d291hiogjchc73c8mg1g-a/quanti',
+        conn_max_age=600
+    )
 }
 
 LANGUAGE_CODE = 'en-us'
