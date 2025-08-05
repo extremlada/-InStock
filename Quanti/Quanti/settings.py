@@ -12,7 +12,7 @@ if not SECRET_KEY or SECRET_KEY == 'fallback-insecure-key-for-build-only':
     # Ne engedjük production-ban fallback-el
     if os.environ.get('RENDER') == 'true':
         raise Exception("SECRET_KEY is not set in environment!")
-        
+
 DEBUG = False
 ALLOWED_HOSTS = ['quanti.hu', 'www.quanti.hu']
 AUTH_USER_MODEL = 'api.Account'
@@ -118,3 +118,4 @@ X_FRAME_OPTIONS = 'DENY'  # vagy 'SAMEORIGIN' ha iframe-ben kell néha
 
 # Támadások elleni védelem
 SECURE_REFERRER_POLICY = 'strict-origin'
+SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SSL_REDIRECT", "False") == "True"
