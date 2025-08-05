@@ -5,9 +5,11 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-a**hb#m2b&8b4xy0uk_-k+d+@ceto_noipln8ych(=*6^$@!sw'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise Exception("SECRET_KEY is not set in environment!")
+DEBUG = False
+ALLOWED_HOSTS = ['quanti.hu', 'www.quanti.hu']
 AUTH_USER_MODEL = 'api.Account'
 
 INSTALLED_APPS = [
@@ -69,7 +71,10 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ORIGINS = [
+    "https://quanti.hu",
+    "https://www.quanti.hu",
+]
 CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
@@ -89,3 +94,22 @@ TEMPLATES = [
         },
     },
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://quanti.hu"
+]
+
+SECURE_HSTS_SECONDS = 31536000  # 1 év
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = True
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'  # vagy 'SAMEORIGIN' ha iframe-ben kell néha
+
+# Támadások elleni védelem
+SECURE_REFERRER_POLICY = 'strict-origin'
