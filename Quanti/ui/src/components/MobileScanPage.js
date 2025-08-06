@@ -10,7 +10,6 @@ import { useSearchParams } from "react-router-dom";
 
 export default function MobileScanPage() {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token");
   const [barcode, setBarcode] = useState("");
   const [lastSent, setLastSent] = useState("");
   const [error, setError] = useState("");
@@ -34,28 +33,28 @@ export default function MobileScanPage() {
   const canvasRef = useRef(null);
 
   // Token ellenőrzés és bejelentkezés
-  useEffect(() => {
-    if (token) {
-      // Token tárolása sessionStorage-ban
-      fetchRaktarok();
-    } else {
-      setError("Hiányzó token! Kérjük, használja a QR kódot a bejelentkezéshez.");
-    }
-  }, [token]);
+  //useEffect(() => {
+  //  if (token) {
+  //    // Token tárolása sessionStorage-ban
+  //    //fetchRaktarok();
+  //  } else {
+  //    setError("Hiányzó token! Kérjük, használja a QR kódot a bejelentkezéshez.");
+  //  }
+  //}, [token]);
 
-  const fetchRaktarok = async () => {
-    try {
-      const response = await axios.get('/api/raktar/', {
-        headers: {
-          "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
-        }
-      });
-      setRaktarList(response.data);
-    } catch (e) {
-      console.error("Raktárak betöltési hiba:", e);
-      setError("Nem sikerült betölteni a raktárakat. Ellenőrizze a jogosultságokat.");
-    }
-  };
+  //const fetchRaktarok = async () => {
+  //  try {
+  //    const response = await axios.get('/api/raktar/', {
+  //      headers: {
+  //        "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
+  //      }
+  //    });
+  //    setRaktarList(response.data);
+  //  } catch (e) {
+  //    console.error("Raktárak betöltési hiba:", e);
+  //    setError("Nem sikerült betölteni a raktárakat. Ellenőrizze a jogosultságokat.");
+  //  }
+  //};
 
   // Natív kamera használata BrowserMultiFormatReader helyett
   const startCamera = async () => {
