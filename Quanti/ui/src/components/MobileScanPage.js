@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import { 
   Box, Typography, Button, Paper, Alert, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, FormControl, 
@@ -17,6 +16,8 @@ export default function MobileScanPage() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [raktarList, setRaktarList] = useState([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [stream, setStream] = useState(null);
   
   // Form adatok
   const [formData, setFormData] = useState({
@@ -30,65 +31,160 @@ export default function MobileScanPage() {
   });
 
   const videoRef = useRef(null);
-  const codeReader = useRef(null);
+  const canvasRef = useRef(null);
 
-  // Raktárak betöltése
+  // Token ellenőrzés és bejelentkezés
   useEffect(() => {
-    fetchRaktarok();
-  }, []);
+    if (token) {
+      // Token tárolása sessionStorage-ban
+      sessionStorage.setItem("access", token);
+      fetchRaktarok();
+    } else {
+      setError("Hiányzó token! Kérjük, használja a QR kódot a bejelentkezéshez.");
+    }
+  }, [token]);
 
   const fetchRaktarok = async () => {
     try {
       const response = await axios.get('/api/raktar/', {
         headers: {
-          "Authorization": `Bearer ${sessionStorage.getItem("access")}`,
+          "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
         }
       });
       setRaktarList(response.data);
     } catch (e) {
       console.error("Raktárak betöltési hiba:", e);
+      setError("Nem sikerült betölteni a raktárakat. Ellenőrizze a jogosultságokat.");
     }
   };
 
-  // Kamera inicializálás
+  // Natív kamera használata BrowserMultiFormatReader helyett
+  const startCamera = async () => {
+    try {
+      setIsScanning(true);
+      
+      // Kamera stream indítása
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: "environment", // Hátsó kamera mobilon
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      
+      setStream(mediaStream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play();
+        
+        // Vonalkód detektálás indítása
+        startBarcodeDetection();
+      }
+      
+    } catch (err) {
+      setError("Kamera hozzáférés megtagadva. Engedélyezze a kamera használatát!");
+      console.error("Kamera hiba:", err);
+    }
+  };
+
+  // Vonalkód detektálás natív Barcode Detection API-val vagy fallback
+  const startBarcodeDetection = () => {
+    if ('BarcodeDetector' in window) {
+      // Natív Barcode Detection API (Chrome/Edge támogatja)
+      const barcodeDetector = new window.BarcodeDetector({
+        formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code']
+      });
+      
+      const detectBarcode = async () => {
+        if (!videoRef.current || !isScanning) return;
+        
+        try {
+          const barcodes = await barcodeDetector.detect(videoRef.current);
+          if (barcodes.length > 0) {
+            const detectedBarcode = barcodes[0].rawValue;
+            handleBarcodeDetected(detectedBarcode);
+            return;
+          }
+        } catch (err) {
+          console.log("Barcode detection error:", err);
+        }
+        
+        // Folyamatos detektálás
+        if (isScanning) {
+          requestAnimationFrame(detectBarcode);
+        }
+      };
+      
+      detectBarcode();
+    } else {
+      // Fallback: ZXing library dinamikus betöltése
+      loadZXingAndStartDetection();
+    }
+  };
+
+  // ZXing library dinamikus betöltése fallback-ként
+  const loadZXingAndStartDetection = async () => {
+    try {
+      // ZXing library dinamikus importálása
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
+      
+      const codeReader = new BrowserMultiFormatReader();
+      
+      codeReader.decodeFromVideoDevice(
+        null,
+        videoRef.current,
+        (result, err) => {
+          if (result && result.getText()) {
+            handleBarcodeDetected(result.getText());
+          }
+          if (err && err.name !== "NotFoundException") {
+            console.error("ZXing error:", err);
+          }
+        }
+      );
+      
+    } catch (err) {
+      setError("Vonalkód olvasó betöltése sikertelen. Próbálja újra!");
+      console.error("ZXing import error:", err);
+    }
+  };
+
+  // Vonalkód detektálás kezelése
+  const handleBarcodeDetected = (detectedBarcode) => {
+    setBarcode(detectedBarcode);
+    setIsScanning(false);
+    
+    // Kamera leállítása
+    stopCamera();
+    
+    // Form megnyitása a beolvasott vonalkóddal
+    setFormData(prev => ({
+      ...prev,
+      barcode: detectedBarcode,
+      ar: prev.Mennyiség * prev.egysegar
+    }));
+    setShowForm(true);
+  };
+
+  // Kamera leállítása
+  const stopCamera = () => {
+    setIsScanning(false);
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  // Komponens eltávolításakor cleanup
   useEffect(() => {
-    startCamera();
     return () => {
-      if (codeReader.current) codeReader.current.reset();
+      stopCamera();
     };
   }, []);
-
-  const startCamera = () => {
-    if (codeReader.current) {
-      codeReader.current.reset();
-    }
-    
-    codeReader.current = new BrowserMultiFormatReader();
-    codeReader.current.decodeFromVideoDevice(
-      null,
-      videoRef.current,
-      (result, err) => {
-        if (result && result.getText()) {
-          const scannedBarcode = result.getText();
-          setBarcode(scannedBarcode);
-          
-          // Form megnyitása a beolvasott vonalkóddal
-          setFormData(prev => ({
-            ...prev,
-            barcode: scannedBarcode,
-            ar: prev.Mennyiség * prev.egysegar // Ár kiszámítása
-          }));
-          setShowForm(true);
-          
-          // Kamera leállítása a form megnyitásakor
-          codeReader.current.reset();
-        }
-        if (err && err.name !== "NotFoundException") {
-          setError("Kamera hiba: " + err.message);
-        }
-      }
-    );
-  };
 
   // Form mező változtatások kezelése
   const handleFormChange = (field, value) => {
@@ -119,7 +215,6 @@ export default function MobileScanPage() {
 
       const payload = {
         ...formData,
-        token,
         muvelet: 'BE', // Beérkezés
         Mennyiség: Number(formData.Mennyiség),
         egysegar: Number(formData.egysegar),
@@ -128,7 +223,7 @@ export default function MobileScanPage() {
 
       await axios.post("/api/items/", payload, {
         headers: {
-          "Authorization": `Bearer ${sessionStorage.getItem("access")}`,
+          "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
           "Content-Type": "application/json"
         }
       });
@@ -176,6 +271,31 @@ export default function MobileScanPage() {
     }, 500);
   };
 
+  // Token hiány esetén üzenet
+  if (!token && !sessionStorage.getItem("access")) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          p: 2,
+          bgcolor: '#f5f5f5'
+        }}
+      >
+        <Paper sx={{ p: 3, textAlign: 'center', maxWidth: 400 }}>
+          <Typography variant="h6" color="error" gutterBottom>
+            Hozzáférés megtagadva
+          </Typography>
+          <Typography variant="body2">
+            Kérjük, használja a QR kódot a főoldalról a mobil beolvasó eléréséhez.
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -209,8 +329,23 @@ export default function MobileScanPage() {
             height: 250, 
             borderRadius: 8,
             backgroundColor: '#000'
-          }} 
+          }}
+          playsInline // Fontos iOS-en
+          muted
         />
+        
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        
+        {!isScanning && !showForm && (
+          <Button 
+            variant="contained" 
+            onClick={startCamera}
+            sx={{ mt: 2 }}
+            fullWidth
+          >
+            Kamera Indítása
+          </Button>
+        )}
         
         {barcode && !showForm && (
           <Typography sx={{ mt: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
@@ -231,11 +366,11 @@ export default function MobileScanPage() {
         )}
 
         <Typography variant="caption" display="block" sx={{ mt: 2, color: 'text.secondary' }}>
-          Irányítsd a kamerát a vonalkódra
+          {isScanning ? 'Irányítsd a kamerát a vonalkódra' : 'Kattints a gombra a szkennelés indításához'}
         </Typography>
       </Paper>
 
-      {/* Termék adatok form dialog */}
+      {/* Termék adatok form dialog - változatlan */}
       <Dialog 
         open={showForm} 
         onClose={handleCloseForm}
