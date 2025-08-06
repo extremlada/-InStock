@@ -48,7 +48,7 @@ export default function MobileScanPage() {
     try {
       const response = await axios.get('/api/raktar/', {
         headers: {
-          "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("access")}`,
         }
       });
       setRaktarList(response.data);
