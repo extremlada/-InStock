@@ -37,7 +37,6 @@ export default function MobileScanPage() {
   useEffect(() => {
     if (token) {
       // Token tárolása sessionStorage-ban
-      sessionStorage.setItem("access", token);
       fetchRaktarok();
     } else {
       setError("Hiányzó token! Kérjük, használja a QR kódot a bejelentkezéshez.");
@@ -48,7 +47,7 @@ export default function MobileScanPage() {
     try {
       const response = await axios.get('/api/raktar/', {
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("access")}`,
+          "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
         }
       });
       setRaktarList(response.data);
