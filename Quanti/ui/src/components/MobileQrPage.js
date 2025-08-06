@@ -8,13 +8,13 @@ export default function MobileQrPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("/api/get_mobile_session/").then(res => {
-      setQrUrl(res.data.url);
-      setLoading(false);
-    }, {
+    axios.get("/api/get_mobile_session/", {
       headers: {
           "Authorization": `Bearer ${sessionStorage.getItem("access")}`,
         }
+    }).then(res => {
+      setQrUrl(res.data.url);
+      setLoading(false);
     });
   }, []);
 
