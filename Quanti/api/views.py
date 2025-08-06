@@ -140,7 +140,7 @@ class MobileSessionView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         token = str(uuid.uuid4())
-        url = f"https://d526-212-40-84-22.ngrok-free.app/mobile-scan?token={token}"
+        url = f"https://quanti.hu/mobile-scan?token={token}"
         # Itt elmentheted a tokent adatbázisba, ha szükséges
         return Response({"token": token, "url": url})
 
