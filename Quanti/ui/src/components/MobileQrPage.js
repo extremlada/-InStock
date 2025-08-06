@@ -11,6 +11,10 @@ export default function MobileQrPage() {
     axios.get("/api/get_mobile_session/").then(res => {
       setQrUrl(res.data.url);
       setLoading(false);
+    }, {
+      headers: {
+          "Authorization": `Bearer ${sessionStorage.getItem("access")}`,
+        }
     });
   }, []);
 
