@@ -143,15 +143,15 @@ class MobileSessionView(APIView):
         url = f"https://quanti.hu/mobile-scan?token={access_token}"
         return Response({"token": access_token, "url": url})
 
-#class MobileBarcodeView(APIView):
-#    permission_classes = [IsAuthenticated]
-#    def post(self, request):
-#        token = request.data.get("token")
-#        barcode = request.data.get("barcode")
-#        # Itt ellenőrizheted és feldolgozhatod a tokent és a vonalkódot
-#        print(f"Token: {token}, Barcode: {barcode}")
-#        # ...adatbázisba mentés, stb...
-#        return Response({"status": "ok"})
+class MobileBarcodeView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        token = request.data.get("token")
+        barcode = request.data.get("barcode")
+        # Itt ellenőrizheted és feldolgozhatod a tokent és a vonalkódot
+        print(f"Token: {token}, Barcode: {barcode}")
+        # ...adatbázisba mentés, stb...
+        return Response({"status": "ok"})
 
 class ReszlegView(APIView):
     serializer_class = RészlegSerializer
