@@ -14,7 +14,6 @@ from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from rest_framework.permissions import IsAuthenticated
-
 from django.db.models.functions import TruncWeek
 import json
 
@@ -139,20 +138,20 @@ def generate_invoice_pdf(request):
 class MobileSessionView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        token = str(uuid.uuid4())
-        url = f"https://quanti.hu/mobile-scan?token={token}"
-        # Itt elmentheted a tokent adatbázisba, ha szükséges
-        return Response({"token": token, "url": url})
+        # Az ACCESS TOKEN-t adjuk át, nem uuid-t!
+        access_token = request.auth.token if hasattr(request.auth, 'token') else str(request.auth)
+        url = f"https://quanti.hu/mobile-scan?token={access_token}"
+        return Response({"token": access_token, "url": url})
 
-class MobileBarcodeView(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request):
-        token = request.data.get("token")
-        barcode = request.data.get("barcode")
-        # Itt ellenőrizheted és feldolgozhatod a tokent és a vonalkódot
-        print(f"Token: {token}, Barcode: {barcode}")
-        # ...adatbázisba mentés, stb...
-        return Response({"status": "ok"})
+#class MobileBarcodeView(APIView):
+#    permission_classes = [IsAuthenticated]
+#    def post(self, request):
+#        token = request.data.get("token")
+#        barcode = request.data.get("barcode")
+#        # Itt ellenőrizheted és feldolgozhatod a tokent és a vonalkódot
+#        print(f"Token: {token}, Barcode: {barcode}")
+#        # ...adatbázisba mentés, stb...
+#        return Response({"status": "ok"})
 
 class ReszlegView(APIView):
     serializer_class = RészlegSerializer

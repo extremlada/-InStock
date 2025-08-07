@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import { 
   Box, Typography, Button, Paper, Alert, Dialog, DialogTitle, 
   DialogContent, DialogActions, TextField, FormControl, 
@@ -10,13 +11,12 @@ import { useSearchParams } from "react-router-dom";
 
 export default function MobileScanPage() {
   const [searchParams] = useSearchParams();
+  const token = searchParams.get("token"); // Ez most az access token
   const [barcode, setBarcode] = useState("");
   const [lastSent, setLastSent] = useState("");
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [raktarList, setRaktarList] = useState([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [stream, setStream] = useState(null);
   
   // Form adatok
   const [formData, setFormData] = useState({
@@ -26,163 +26,81 @@ export default function MobileScanPage() {
     barcode: '',
     egysegar: 0,
     ar: 0,
-    Depot: ''
+    Depot: '',
+    muvelet: 'BE' // Alapértelmezés: bevétel
   });
 
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const codeReader = useRef(null);
 
-  // Token ellenőrzés és bejelentkezés
-  //useEffect(() => {
-  //  if (token) {
-  //    // Token tárolása sessionStorage-ban
-  //    //fetchRaktarok();
-  //  } else {
-  //    setError("Hiányzó token! Kérjük, használja a QR kódot a bejelentkezéshez.");
-  //  }
-  //}, [token]);
-
-  //const fetchRaktarok = async () => {
-  //  try {
-  //    const response = await axios.get('/api/raktar/', {
-  //      headers: {
-  //        "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
-  //      }
-  //    });
-  //    setRaktarList(response.data);
-  //  } catch (e) {
-  //    console.error("Raktárak betöltési hiba:", e);
-  //    setError("Nem sikerült betölteni a raktárakat. Ellenőrizze a jogosultságokat.");
-  //  }
-  //};
-
-  // Natív kamera használata BrowserMultiFormatReader helyett
-  const startCamera = async () => {
-    try {
-      setIsScanning(true);
-      
-      // Kamera stream indítása
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "environment", // Hátsó kamera mobilon
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-      
-      setStream(mediaStream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
-        
-        // Vonalkód detektálás indítása
-        startBarcodeDetection();
-      }
-      
-    } catch (err) {
-      setError("Kamera hozzáférés megtagadva. Engedélyezze a kamera használatát!");
-      console.error("Kamera hiba:", err);
-    }
-  };
-
-  // Vonalkód detektálás natív Barcode Detection API-val vagy fallback
-  const startBarcodeDetection = () => {
-    if ('BarcodeDetector' in window) {
-      // Natív Barcode Detection API (Chrome/Edge támogatja)
-      const barcodeDetector = new window.BarcodeDetector({
-        formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code']
-      });
-      
-      const detectBarcode = async () => {
-        if (!videoRef.current || !isScanning) return;
-        
-        try {
-          const barcodes = await barcodeDetector.detect(videoRef.current);
-          if (barcodes.length > 0) {
-            const detectedBarcode = barcodes[0].rawValue;
-            handleBarcodeDetected(detectedBarcode);
-            return;
-          }
-        } catch (err) {
-          console.log("Barcode detection error:", err);
-        }
-        
-        // Folyamatos detektálás
-        if (isScanning) {
-          requestAnimationFrame(detectBarcode);
-        }
-      };
-      
-      detectBarcode();
+  // Token és raktárak betöltése
+  useEffect(() => {
+    if (token) {
+      // Token tárolása sessionStorage-ban
+      sessionStorage.setItem("access", token);
+      fetchRaktarok();
     } else {
-      // Fallback: ZXing library dinamikus betöltése
-      loadZXingAndStartDetection();
+      setError("Hiányzó token! Kérjük, használja a QR kódot a bejelentkezéshez.");
+    }
+  }, [token]);
+
+  const fetchRaktarok = async () => {
+    try {
+      console.log('Fetching raktarok with access token...');
+      const response = await axios.get('/api/raktar/', {
+        headers: {
+          "Authorization": `Bearer ${token}`, // ACCESS TOKEN használata
+        }
+      });
+      console.log('Raktarok loaded:', response.data.length);
+      setRaktarList(response.data);
+    } catch (e) {
+      console.error("Raktárak betöltési hiba:", e);
+      setError(`Nem sikerült betölteni a raktárakat. Hiba: ${e.response?.data?.detail || e.message}`);
     }
   };
 
-  // ZXing library dinamikus betöltése fallback-ként
-  const loadZXingAndStartDetection = async () => {
+  // Kamera inicializálás
+  useEffect(() => {
+    if (token && raktarList.length > 0) {
+      initializeScanner();
+    }
+    return () => {
+      if (codeReader.current) codeReader.current.reset();
+    };
+  }, [token, raktarList]);
+
+  const initializeScanner = () => {
     try {
-      // ZXing library dinamikus importálása
-      const { BrowserMultiFormatReader } = await import('@zxing/browser');
-      
-      const codeReader = new BrowserMultiFormatReader();
-      
-      codeReader.decodeFromVideoDevice(
+      codeReader.current = new BrowserMultiFormatReader();
+      codeReader.current.decodeFromVideoDevice(
         null,
         videoRef.current,
         (result, err) => {
           if (result && result.getText()) {
-            handleBarcodeDetected(result.getText());
+            const scannedBarcode = result.getText();
+            setBarcode(scannedBarcode);
+            
+            // Form megnyitása a beolvasott vonalkóddal
+            setFormData(prev => ({
+              ...prev,
+              barcode: scannedBarcode,
+              ar: prev.Mennyiség * prev.egysegar
+            }));
+            setShowForm(true);
+            
+            // Kamera leállítása a form megnyitásakor
+            codeReader.current.reset();
           }
           if (err && err.name !== "NotFoundException") {
-            console.error("ZXing error:", err);
+            setError("Kamera hiba: " + err.message);
           }
         }
       );
-      
-    } catch (err) {
-      setError("Vonalkód olvasó betöltése sikertelen. Próbálja újra!");
-      console.error("ZXing import error:", err);
+    } catch (e) {
+      setError("Kamera inicializálása sikertelen: " + e.message);
     }
   };
-
-  // Vonalkód detektálás kezelése
-  const handleBarcodeDetected = (detectedBarcode) => {
-    setBarcode(detectedBarcode);
-    setIsScanning(false);
-    
-    // Kamera leállítása
-    stopCamera();
-    
-    // Form megnyitása a beolvasott vonalkóddal
-    setFormData(prev => ({
-      ...prev,
-      barcode: detectedBarcode,
-      ar: prev.Mennyiség * prev.egysegar
-    }));
-    setShowForm(true);
-  };
-
-  // Kamera leállítása
-  const stopCamera = () => {
-    setIsScanning(false);
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
-
-  // Komponens eltávolításakor cleanup
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
 
   // Form mező változtatások kezelése
   const handleFormChange = (field, value) => {
@@ -198,10 +116,9 @@ export default function MobileScanPage() {
     });
   };
 
-  // Form elküldése
+  // Form elküldése KÖZVETLENÜL az API/items endpoint-ra
   const handleSubmitForm = async () => {
     try {
-      // Validáció
       if (!formData.name.trim()) {
         setError("A termék neve kötelező!");
         return;
@@ -212,25 +129,30 @@ export default function MobileScanPage() {
       }
 
       const payload = {
-        ...formData,
-        muvelet: 'BE', // Beérkezés
+        name: formData.name,
+        barcode: formData.barcode,
+        Leirás: formData.Leirás,
         Mennyiség: Number(formData.Mennyiség),
+        muvelet: formData.muvelet,
         egysegar: Number(formData.egysegar),
-        ar: Number(formData.ar)
+        Depot: formData.Depot
       };
 
-      await axios.post("/api/items/", payload, {
+      console.log('Sending to /api/items/ with payload:', payload);
+
+      const response = await axios.post("/api/items/", payload, {
         headers: {
-          "Authorization": `Bearer ${token || sessionStorage.getItem("access")}`,
+          "Authorization": `Bearer ${token}`, // ACCESS TOKEN használata
           "Content-Type": "application/json"
         }
       });
 
+      console.log('API response:', response.data);
       setLastSent(`${formData.name} (${formData.barcode})`);
       setError("");
       setShowForm(false);
       
-      // Form reset
+      // Form reset és újraindítás
       setFormData({
         name: '',
         Mennyiség: 1,
@@ -238,15 +160,17 @@ export default function MobileScanPage() {
         barcode: '',
         egysegar: 0,
         ar: 0,
-        Depot: ''
+        Depot: '',
+        muvelet: 'BE'
       });
       
-      // Kamera újraindítása
       setTimeout(() => {
-        startCamera();
-      }, 1000);
+        setBarcode("");
+        initializeScanner();
+      }, 2000);
       
     } catch (e) {
+      console.error('API Error details:', e.response);
       setError("Hiba a termék mentésekor: " + (e.response?.data?.detail || e.message));
     }
   };
@@ -261,16 +185,18 @@ export default function MobileScanPage() {
       barcode: '',
       egysegar: 0,
       ar: 0,
-      Depot: ''
+      Depot: '',
+      muvelet: 'BE'
     });
     // Kamera újraindítása
     setTimeout(() => {
-      startCamera();
+      setBarcode("");
+      initializeScanner();
     }, 500);
   };
 
   // Token hiány esetén üzenet
-  if (!token && !sessionStorage.getItem("access")) {
+  if (!token) {
     return (
       <Box
         sx={{
@@ -320,6 +246,14 @@ export default function MobileScanPage() {
           Mobil Raktár Beolvasó
         </Typography>
         
+        {/* Debug információ */}
+        <Typography variant="caption" sx={{ display: 'block', mb: 1, color: 'text.secondary' }}>
+          Token: {token ? '✅ Megvan' : '❌ Hiányzik'}
+        </Typography>
+        <Typography variant="caption" sx={{ display: 'block', mb: 2, color: 'text.secondary' }}>
+          Raktárak: {raktarList.length} db
+        </Typography>
+        
         <video 
           ref={videoRef} 
           style={{ 
@@ -328,22 +262,9 @@ export default function MobileScanPage() {
             borderRadius: 8,
             backgroundColor: '#000'
           }}
-          playsInline // Fontos iOS-en
+          playsInline
           muted
         />
-        
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-        
-        {!isScanning && !showForm && (
-          <Button 
-            variant="contained" 
-            onClick={startCamera}
-            sx={{ mt: 2 }}
-            fullWidth
-          >
-            Kamera Indítása
-          </Button>
-        )}
         
         {barcode && !showForm && (
           <Typography sx={{ mt: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
@@ -364,11 +285,11 @@ export default function MobileScanPage() {
         )}
 
         <Typography variant="caption" display="block" sx={{ mt: 2, color: 'text.secondary' }}>
-          {isScanning ? 'Irányítsd a kamerát a vonalkódra' : 'Kattints a gombra a szkennelés indításához'}
+          Irányítsd a kamerát a vonalkódra
         </Typography>
       </Paper>
 
-      {/* Termék adatok form dialog - változatlan */}
+      {/* Termék adatok form dialog */}
       <Dialog 
         open={showForm} 
         onClose={handleCloseForm}
@@ -436,7 +357,22 @@ export default function MobileScanPage() {
               />
             </Grid>
 
-            {/* Mennyiség és Egységár */}
+            {/* Művelet típusa */}
+            <Grid item xs={6}>
+              <FormControl fullWidth>
+                <InputLabel>Művelet</InputLabel>
+                <Select
+                  value={formData.muvelet}
+                  onChange={(e) => handleFormChange('muvelet', e.target.value)}
+                  label="Művelet"
+                >
+                  <MenuItem value="BE">Bevétel (BE)</MenuItem>
+                  <MenuItem value="KI">Kiadás (KI)</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Mennyiség */}
             <Grid item xs={6}>
               <TextField
                 label="Mennyiség *"
@@ -449,7 +385,8 @@ export default function MobileScanPage() {
               />
             </Grid>
 
-            <Grid item xs={6}>
+            {/* Egységár */}
+            <Grid item xs={12}>
               <TextField
                 label="Egységár (Ft)"
                 type="number"
